@@ -4,6 +4,7 @@ import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { ContactShadows, Grid, OrbitControls } from '@react-three/drei';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import * as THREE from 'three';
 import {
@@ -17,7 +18,7 @@ import './improvements.css';
 const sampleNames = ['武僧@Lv1','武僧@Lv2','武僧@Lv3','叶问@Lv1','叶问@Lv2','叶问@Lv3','虎头少女@Lv1','虎头少女@Lv2','虎头少女@Lv3'];
 const samples = sampleNames.map((key, index) => ({
   id: key, key, name: key.split('@')[0], level: key.split('@')[1],
-  file: `/meshes/${key}.obj`,
+  file: `/models/${key}.glb`,
   video: `/media/${key}__${key}_front.mp4`,
   poster: `/media/${key}__${key}_front.jpg`,
   color: ['#dfff5b','#ff7048','#b894ff','#68d5ff','#dfff5b','#ff8a65','#ffca5b','#e885ff','#78e5bd'][index]
@@ -32,7 +33,7 @@ function Landing({ enter }) {
     <nav className="nav shell">
       <Logo />
       <div className="nav-links"><a href="#showcase">Showcase</a><a href="#workflow">Workflow</a><a href="#about">About</a></div>
-      <button className="nav-cta" onClick={enter}>Open Studio <ArrowRight size={15}/></button>
+      <a className="nav-cta" href="#studio" onClick={enter}>Open Studio <ArrowRight size={15}/></a>
     </nav>
 
     <section className="hero shell">
@@ -41,17 +42,19 @@ function Landing({ enter }) {
       <h1>Give your mesh<br/><em>something to feel.</em></h1>
       <p>Turn a static 3D character into expressive animation.<br/>Upload a mesh, describe the motion, and let it move.</p>
       <div className="hero-actions">
-        <button className="primary" onClick={enter}>Start creating <ArrowRight size={17}/></button>
+        <a className="primary" href="#studio" onClick={enter}>Start creating <ArrowRight size={17}/></a>
         <button className="ghost" onClick={() => document.querySelector('#showcase')?.scrollIntoView({behavior:'smooth'})}><Play size={15} fill="currentColor"/> Watch showcase</button>
       </div>
-      <div className="hero-stage" onClick={enter}>
-        <div className="stage-orbit orbit-one"/><div className="stage-orbit orbit-two"/>
-        <div className="character-silhouette"><span className="head"/><span className="torso"/><span className="arm left"/><span className="arm right"/><span className="leg left"/><span className="leg right"/></div>
-        <div className="motion-ribbon r1"/><div className="motion-ribbon r2"/>
-        <div className="stage-card card-a"><span>INPUT</span><b>Static mesh</b><i>FBX · OBJ · GLB</i></div>
-        <div className="stage-card card-b"><span>OUTPUT</span><b>Motion ready</b><i><span className="live-dot"/> 33 frames generated</i></div>
-        <div className="stage-label"><MousePointer2 size={14}/> Drag to explore</div>
-      </div>
+      <a className="hero-stage cinematic-stage" href="#studio" onClick={enter} aria-label="Open 3D workspace">
+        <video src="/media/武僧@Lv2__武僧@Lv2_front.mp4" poster="/media/武僧@Lv2__武僧@Lv2_front.jpg" autoPlay muted loop playsInline/>
+        <div className="cinema-shade"/><div className="scan-line"/><div className="frame-corners"/>
+        <div className="cinema-top"><span><i/> LIVE MOTION SYNTHESIS</span><b>ANM—02 / MONK</b><em>1920 × 1080</em></div>
+        <div className="motion-data data-left"><span>INPUT ANALYSIS</span><b>Humanoid mesh</b><i>Rig detected · 65 joints</i><div><small>BODY</small><strong>98%</strong></div></div>
+        <div className="motion-data data-right"><span>MOTION OUTPUT</span><b>Spinning high kick</b><i><span className="live-dot"/> Generated in 2.4s</i><div><small>CONFIDENCE</small><strong>96%</strong></div></div>
+        <div className="cinema-timeline"><span>00:00</span><div><i/><b/></div><span>00:02</span></div>
+        <div className="cinema-open">ENTER STUDIO <ArrowRight size={14}/></div>
+      </a>
+      <div className="hero-proof"><span>FBX</span><i/><span>GLB</span><i/><span>TEXT TO MOTION</span><i/><span>4-VIEW RENDER</span><i/><span>EXPORT READY</span></div>
     </section>
 
     <section className="showcase shell" id="showcase">
@@ -71,7 +74,7 @@ function Landing({ enter }) {
         <div><span>02</span><WandSparkles/><h3>Describe the motion</h3><p>Use natural language to direct pose, energy and style.</p></div>
         <div><span>03</span><Film/><h3>Bring it to life</h3><p>Preview from every angle and export the final animation.</p></div>
       </div>
-      <button className="primary final-cta" onClick={enter}>Enter the studio <ArrowRight size={17}/></button>
+      <a className="primary final-cta" href="#studio" onClick={enter}>Enter the studio <ArrowRight size={17}/></a>
     </section>
     <footer className="shell"><Logo/><span>© 2026 ANIMESH LAB</span><span>Make every frame matter.</span></footer>
   </main>;
@@ -146,6 +149,24 @@ function ObjModel({ url, onReady }) {
   return <primitive object={object} scale={transform.scale} position={transform.position}/>;
 }
 
+function GltfModel({ url, onReady, animate = false, playing = true }) {
+  const gltf = useLoader(GLTFLoader, url);
+  const object = useMemo(() => cloneSkeleton(gltf.scene), [gltf.scene]);
+  const transform = useMemo(() => normalizeModel(object), [object]);
+  const mixer = useMemo(() => animate && gltf.animations.length ? new THREE.AnimationMixer(object) : null, [object, gltf.animations, animate]);
+  useEffect(() => {
+    object.traverse(child => {
+      if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+    });
+    if (mixer && gltf.animations[0]) mixer.clipAction(gltf.animations[0]).reset().play();
+    onReady?.();
+    return () => mixer?.stopAllAction();
+  }, [object, mixer, gltf.animations, onReady]);
+  useEffect(() => { if (mixer) mixer.timeScale = playing ? 1 : 0; }, [mixer, playing]);
+  useFrame((_, delta) => mixer?.update(delta));
+  return <primitive object={object} scale={transform.scale} position={transform.position}/>;
+}
+
 class ViewerErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { failed: false }; }
   static getDerivedStateFromError() { return { failed: true }; }
@@ -165,7 +186,7 @@ function Viewer({ url, format, onDrop, animate = false, playing = true }) {
       <Suspense fallback={null}>
         <color attach="background" args={['#101216']}/>
         <ambientLight intensity={1.2}/><hemisphereLight args={['#e7eeff', '#29251f', 1.4]}/><directionalLight castShadow position={[4,7,5]} intensity={3}/><pointLight position={[-4,2,-3]} intensity={4} color="#7058ff"/>
-        {format === 'obj' ? <ObjModel url={url} onReady={ready}/> : <FbxModel url={url} onReady={ready} animate={animate} playing={playing}/>} 
+        {format === 'glb' ? <GltfModel url={url} onReady={ready} animate={animate} playing={playing}/> : format === 'obj' ? <ObjModel url={url} onReady={ready}/> : <FbxModel url={url} onReady={ready} animate={animate} playing={playing}/>} 
         <Grid args={[20,20]} cellColor="#30343d" sectionColor="#515866" fadeDistance={18} fadeStrength={1.5} position={[0,-1.2,0]}/>
         <ContactShadows position={[0,-1.18,0]} opacity={0.5} scale={8} blur={2}/>
         <OrbitControls makeDefault enableDamping target={[0,.2,0]} minDistance={2.2} maxDistance={10}/>
@@ -199,9 +220,9 @@ function Workspace({ home }) {
     const matched = samples.find(item => item.key === key) || null;
     const detectedCharacter = ['武僧','叶问','虎头少女'].find(name => key.includes(name)) || '';
     setSample(null); setCharacter(detectedCharacter);
-    // Known assets use the original FBX so embedded materials and textures are preserved.
-    setModelUrl(matched ? `/fbx/${matched.key}.fbx` : URL.createObjectURL(file)); setModelName(file.name);
-    setModelFormat(matched ? 'fbx' : (file.name.toLowerCase().endsWith('.obj') ? 'obj' : 'fbx'));
+    // Known assets use the Blender-exported GLB so all material slots are preserved.
+    setModelUrl(matched ? matched.file : URL.createObjectURL(file)); setModelName(file.name);
+    setModelFormat(matched ? 'glb' : (file.name.toLowerCase().endsWith('.obj') ? 'obj' : 'fbx'));
     setGenerated(false); setProgress(0); setPlaying(false);
   };
   const generate = async () => {
@@ -224,6 +245,7 @@ function Workspace({ home }) {
   const videoUrl = sample ? `/media/${sample.key}__${sample.key}_${view}.mp4` : '';
   const posterUrl = sample ? `/media/${sample.key}__${sample.key}_${view}.jpg` : '';
   const animatedFbxUrl = sample ? `/fbx/${sample.key}.fbx` : '';
+  const animatedWebUrl = sample ? `/models/${sample.key}.glb` : '';
 
   return <main className="studio">
     <header className="studio-head"><Logo onClick={home}/><div className="project-title"><span>My projects</span><i>/</i><b>Untitled motion</b><ChevronDown size={14}/></div><div className="head-actions"><span className="saved"><i/> Saved</span><button><CircleHelp size={17}/></button><button className="avatar">XW</button></div></header>
@@ -247,7 +269,7 @@ function Workspace({ home }) {
     </section>
     <section className="canvas-area">
       {!generated && !(progress > 0 && progress < 100) ? <div className="motion-stage-empty"><div>{includeScene?<Layers3/>:<Box/>}</div><b>Your motion will appear here</b><span>{includeScene?'Scene render · Four camera views':'Transparent stage · Animated FBX output'}</span></div> : !generated ? <div className="center-generating"><div className="gen-orb"><span/></div><b>Generating motion</b><span>Matching character and movement · {progress}%</span><div><i style={{width:`${progress}%`}}/></div></div> : <>
-        {includeScene ? <><div className="motion-preview"><video key={videoUrl} ref={videoRef} src={videoUrl} poster={posterUrl} autoPlay muted loop playsInline/><span className="result-badge"><i/> {sample.key} · SCENE</span></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : <div className="fbx-motion-preview"><Viewer url={animatedFbxUrl} format="fbx" animate playing={playing}/><span className="result-badge"><i/> {sample.key} · FBX / NO SCENE</span><small><Rotate3d size={12}/> Drag to inspect animated mesh</small></div>}
+        {includeScene ? <><div className="motion-preview"><video key={videoUrl} ref={videoRef} src={videoUrl} poster={posterUrl} autoPlay muted loop playsInline/><span className="result-badge"><i/> {sample.key} · SCENE</span></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : <div className="fbx-motion-preview"><Viewer url={animatedWebUrl} format="glb" animate playing={playing}/><span className="result-badge"><i/> {sample.key} · FBX / NO SCENE</span><small><Rotate3d size={12}/> Drag to inspect animated mesh</small></div>}
         <div className="playbar"><button className="play" onClick={toggle}>{playing?<Pause fill="currentColor"/>:<Play fill="currentColor"/>}</button><span>00:00</span><div className="timeline"><i style={{width: playing?'58%':'34%'}}/><b style={{left: playing?'58%':'34%'}}/></div><span>00:02</span><button>1×</button><button><Expand size={15}/></button></div>
       </>}
     </section>

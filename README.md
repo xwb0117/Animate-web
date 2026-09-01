@@ -15,6 +15,7 @@ npm run dev
 
 - 高级暗色品牌首页与案例展示
 - 使用本地 FBX / OBJ 数据的 Three.js 交互预览
+- 使用从 Blender 导出的带材质槽 GLB 进行网页预览，保留 cloth、skin、shoe、hair 等角色材质分区
 - 鼠标旋转、缩放和平移 Mesh
 - 拖放或选择新的 FBX / OBJ 文件
 - Prompt 输入、快捷提示词与运动参数
@@ -32,6 +33,8 @@ npm run dev
 ```bash
 npm run extract:meshes
 ```
+
+网页使用的角色 GLB 位于 `public/models`。它们从 `fbx_final` 的 Blender 文件中导出，包含角色骨骼、动画和材质槽；原始 FBX 继续作为无场景动画的下载格式。
 
 ## 部署为公开网址
 
