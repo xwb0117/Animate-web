@@ -1,4 +1,4 @@
-# Animesh Studio
+# AETHR Studio
 
 AI 角色动画网站原型，包含品牌首页与可交互工作台。
 

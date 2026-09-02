@@ -28,4 +28,4 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 app.use(express.static(path.join(root, 'dist'), { maxAge: '1h', etag: true }));
 app.use((_req, res) => res.sendFile(path.join(root, 'dist/index.html')));
 
-app.listen(port, '0.0.0.0', () => console.log(`Animesh is running on http://0.0.0.0:${port}`));
+app.listen(port, '0.0.0.0', () => console.log(`AETHR is running on http://0.0.0.0:${port}`));

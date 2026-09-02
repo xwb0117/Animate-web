@@ -24,8 +24,28 @@ const samples = sampleNames.map((key, index) => ({
   color: ['#dfff5b','#ff7048','#b894ff','#68d5ff','#dfff5b','#ff8a65','#ffca5b','#e885ff','#78e5bd'][index]
 }));
 
+const showcases = [
+  { key:'太极剑@展示', label:'Tai Chi Sword', scene:'Bamboo Forest', slug:'bamboo_forest' },
+  { key:'李小龙@skill', label:'Jeet Kune Do', scene:'Ancient Courtyard', slug:'courtyard' },
+  { key:'苗族巫医Attack', label:'Shaman Assault', scene:'Forest River', slug:'forest_river' },
+  { key:'葫芦skill', label:'Gourd Technique', scene:'Sunlit Meadow', slug:'meadow' },
+  { key:'八卦掌@attack', label:'Baguazhang Strike', scene:'Stone Forest', slug:'stone_forest' },
+  { key:'长枪@大招', label:'Spear Ultimate', scene:'Martial Arena', slug:'martial_arena' }
+];
+
 function Logo({ onClick }) {
-  return <button className="logo" onClick={onClick} aria-label="Animesh home"><span className="logo-mark"><i/><i/><i/></span><span>ANIMESH</span><b>LAB</b></button>;
+  return <button className="logo" onClick={onClick} aria-label="AETHR home"><span className="logo-mark"><i/><i/><i/></span><span>AETHR</span><b>LAB</b></button>;
+}
+
+function ShowcaseCard({ item, index, enter }) {
+  const [view, setView] = useState('front');
+  const base = `/showcase-scenes/${item.slug}`;
+  return <article className="show-card scene-card" onClick={enter}>
+    <video key={`${item.slug}-${view}`} src={`${base}/${view}.mp4`} poster={`${base}/poster.jpg`} autoPlay muted loop playsInline preload="metadata"/>
+    <div className="scene-chip"><i/>{item.scene}</div>
+    <div className="card-views" aria-label="Camera view">{['front','right','back','left'].map(v=><button key={v} title={`${v} view`} className={view===v?'active':''} onClick={event=>{event.stopPropagation();setView(v)}}>{v}</button>)}</div>
+    <div className="show-overlay"><span>0{index+1}</span><div><b>{item.label}</b><small>{item.key} · {view.toUpperCase()} VIEW</small></div><ArrowRight/></div>
+  </article>;
 }
 
 function Landing({ enter }) {
@@ -46,9 +66,9 @@ function Landing({ enter }) {
         <button className="ghost" onClick={() => document.querySelector('#showcase')?.scrollIntoView({behavior:'smooth'})}><Play size={15} fill="currentColor"/> Watch showcase</button>
       </div>
       <a className="hero-stage cinematic-stage" href="#studio" onClick={enter} aria-label="Open 3D workspace">
-        <video src="/media/武僧@Lv2__武僧@Lv2_front.mp4" poster="/media/武僧@Lv2__武僧@Lv2_front.jpg" autoPlay muted loop playsInline/>
+        <video src="/showcase-scenes/waterfall/front.mp4" poster="/showcase-scenes/waterfall/poster.jpg" autoPlay muted loop playsInline/>
         <div className="cinema-shade"/><div className="scan-line"/><div className="frame-corners"/>
-        <div className="cinema-top"><span><i/> LIVE MOTION SYNTHESIS</span><b>ANM—02 / MONK</b><em>1920 × 1080</em></div>
+        <div className="cinema-top"><span><i/> LIVE MOTION SYNTHESIS</span><b>AETHR—X / UMBRELLA</b><em>1920 × 1080</em></div>
         <div className="motion-data data-left"><span>INPUT ANALYSIS</span><b>Humanoid mesh</b><i>Rig detected · 65 joints</i><div><small>BODY</small><strong>98%</strong></div></div>
         <div className="motion-data data-right"><span>MOTION OUTPUT</span><b>Spinning high kick</b><i><span className="live-dot"/> Generated in 2.4s</i><div><small>CONFIDENCE</small><strong>96%</strong></div></div>
         <div className="cinema-timeline"><span>00:00</span><div><i/><b/></div><span>00:02</span></div>
@@ -60,10 +80,7 @@ function Landing({ enter }) {
     <section className="showcase shell" id="showcase">
       <div><span className="section-no">01 / SHOWCASE</span><h2>From still to <em>alive.</em></h2></div>
       <div className="showcase-grid showcase-nine">
-        {samples.map((s, i) => <button key={s.id} className={`show-card card-${i}`} onClick={enter}>
-          <video src={s.video} poster={s.poster} autoPlay muted loop playsInline preload="metadata"/>
-          <div className="show-overlay"><span>0{i+1}</span><div><b>{s.name} · {s.level}</b><small>AI GENERATED MOTION</small></div><ArrowRight/></div>
-        </button>)}
+        {showcases.map((item, index) => <ShowcaseCard key={item.key} item={item} index={index} enter={enter}/>)}
       </div>
     </section>
 
@@ -76,7 +93,7 @@ function Landing({ enter }) {
       </div>
       <a className="primary final-cta" href="#studio" onClick={enter}>Enter the studio <ArrowRight size={17}/></a>
     </section>
-    <footer className="shell"><Logo/><span>© 2026 ANIMESH LAB</span><span>Make every frame matter.</span></footer>
+    <footer className="shell"><Logo/><span>© 2026 AETHR LAB</span><span>Make every frame matter.</span></footer>
   </main>;
 }
 
@@ -269,14 +286,14 @@ function Workspace({ home }) {
     </section>
     <section className="canvas-area">
       {!generated && !(progress > 0 && progress < 100) ? <div className="motion-stage-empty"><div>{includeScene?<Layers3/>:<Box/>}</div><b>Your motion will appear here</b><span>{includeScene?'Scene render · Four camera views':'Transparent stage · Animated FBX output'}</span></div> : !generated ? <div className="center-generating"><div className="gen-orb"><span/></div><b>Generating motion</b><span>Matching character and movement · {progress}%</span><div><i style={{width:`${progress}%`}}/></div></div> : <>
-        {includeScene ? <><div className="motion-preview"><video key={videoUrl} ref={videoRef} src={videoUrl} poster={posterUrl} autoPlay muted loop playsInline/><span className="result-badge"><i/> {sample.key} · SCENE</span></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : <div className="fbx-motion-preview"><Viewer url={animatedWebUrl} format="glb" animate playing={playing}/><span className="result-badge"><i/> {sample.key} · FBX / NO SCENE</span><small><Rotate3d size={12}/> Drag to inspect animated mesh</small></div>}
+        {includeScene ? <><div className="motion-preview"><video key={videoUrl} ref={videoRef} src={videoUrl} poster={posterUrl} preload="auto" autoPlay muted loop playsInline/><span className="result-badge"><i/> {sample.key} · SCENE · 1080P</span></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : <div className="fbx-motion-preview"><Viewer url={animatedWebUrl} format="glb" animate playing={playing}/><span className="result-badge"><i/> {sample.key} · FBX / NO SCENE</span><small><Rotate3d size={12}/> Drag to inspect animated mesh</small></div>}
         <div className="playbar"><button className="play" onClick={toggle}>{playing?<Pause fill="currentColor"/>:<Play fill="currentColor"/>}</button><span>00:00</span><div className="timeline"><i style={{width: playing?'58%':'34%'}}/><b style={{left: playing?'58%':'34%'}}/></div><span>00:02</span><button>1×</button><button><Expand size={15}/></button></div>
       </>}
     </section>
     <aside className="output-panel">
       <div className="output-head"><div><span className="step-pill">03</span><h2>Motion result</h2></div><button><Download size={17}/></button></div>
       {!generated ? <div className="result-empty"><Film/><b>{progress>0?'Generating…':'No motion yet'}</b><span>{progress>0?'The matched animation will appear in the center.':'Upload a mesh and describe the movement to generate your first animation.'}</span></div> : <>
-        <div className="output-mode"><Layers3/><div><span>Output mode</span><b>{includeScene?'Scene render':'Animation only'}</b></div><em>{includeScene?'4-view MP4':'No scene'}</em></div>
+        <div className="output-mode"><Layers3/><div><span>Output mode</span><b>{includeScene?'Scene render':'Animation only'}</b></div><em>{includeScene?'4-view · 1080p':'No scene'}</em></div>
         <div className="result-info"><div><span>Animation</span><b>{sample.name} · {sample.level}</b></div><div><span>Duration</span><b>2.0 sec</b></div><div><span>Frames</span><b>33</b></div><div><span>Format</span><b>{includeScene?'MP4':'FBX'}</b></div></div>
         <a className="export" href={includeScene?videoUrl:animatedFbxUrl} download><Download size={16}/> Export {includeScene?'scene video':'animation FBX'} <ChevronDown size={15}/></a>
       </>}

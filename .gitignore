@@ -1,5 +1,8 @@
 node_modules/
 dist/
 fbx_final/
+animation1/
+animation2/
+animation_blender/
 .DS_Store
 npm-debug.log*
