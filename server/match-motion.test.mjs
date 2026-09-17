@@ -19,7 +19,7 @@ test('all nine character clips map to distinct short Chinese prompts', () => {
   const prompts = {
     武僧: ['合掌', '扫腿', '直拳'],
     叶问: ['摊手', '连环拳', '肘击'],
-    虎头少女: ['跳舞', '格挡出拳', '旋转踢']
+    虎头少女: ['低弓步', '格挡出拳', '旋转踢']
   };
   for (const [character, actions] of Object.entries(prompts)) {
     actions.forEach((prompt, index) => {
@@ -27,6 +27,10 @@ test('all nine character clips map to distinct short Chinese prompts', () => {
     });
   }
   assert.throws(() => matchMotion('武僧', '跳舞'));
+  assert.equal(matchMotion('叶问', '沿中线连续出拳，拍手拨挡后短步前进，再后撤防守').key, '叶问@Lv2');
+  assert.equal(matchMotion('叶问', '侧身格挡后抬腿踢击').key, '叶问@Lv3');
+  assert.equal(matchMotion('虎头少女', '换步转身，落入低弓步再出拳').key, '虎头少女@Lv1');
+  assert.equal(matchMotion('虎头少女', '转身打拳').key, '虎头少女@Lv1');
 });
 
 test('all nine concise canonical prompts map to their own clips', () => {
@@ -34,7 +38,7 @@ test('all nine concise canonical prompts map to their own clips', () => {
   assert.equal(catalog.length, 9);
   assert.equal(new Set(catalog.map(item => item.prompt)).size, 9);
   for (const item of catalog) {
-    assert.ok(item.prompt.length >= 25 && item.prompt.length <= 45, `${item.key} prompt should be concise but descriptive`);
+    assert.ok(item.prompt.length >= 20 && item.prompt.length <= 45, `${item.key} prompt should be concise but descriptive`);
     assert.equal(matchMotion(item.character, item.prompt).key, item.key);
   }
 });

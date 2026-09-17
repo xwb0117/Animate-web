@@ -8,6 +8,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import * as THREE from 'three';
 import UrdfModel from './UrdfModel.jsx';
+import UrdfScene from './UrdfScene.jsx';
 import { sampleUrdfFrames } from './urdf-motion.js';
 import { inputModels, recognizeInputModel } from './input-models.js';
 import {
@@ -226,12 +227,12 @@ function Viewer({ url, format, onDrop, animate = false, playing = true, kind, mo
   useEffect(() => setLoaded(false), [url]);
   const ready = React.useCallback(() => setLoaded(true), []);
   return <div className="viewer" onDragOver={e=>e.preventDefault()} onDrop={onDrop}>
-    {url && <ViewerErrorBoundary key={url} onError={ready} fallbackPoster={format === 'urdf' ? `/unitree/${kind}/poster.png` : null}><Canvas shadows camera={{ position: [3.4, 1.65, 5.2], fov: 38 }} gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: Boolean(onCanvasReady) }} onCreated={({ gl }) => onCanvasReady?.(gl.domElement)}>
+    {url && <ViewerErrorBoundary key={url} onError={ready} fallbackPoster={format === 'urdf' ? `/unitree/${kind}/poster.png` : null}><Canvas shadows dpr={[1,2]} camera={{ position: [3.4, 1.65, 5.2], fov: 38 }} gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: Boolean(onCanvasReady) }} onCreated={({ gl }) => onCanvasReady?.(gl.domElement)}>
       <Suspense fallback={null}>
-        <color attach="background" args={['#101216']}/>
+        <color attach="background" args={[includeScene && format === 'urdf' && motion ? { g1:'#101a24', b1:'#17251d', cabinet:'#241c1a' }[kind] || '#101216' : '#101216']}/>
         <ambientLight intensity={1.2}/><hemisphereLight args={['#e7eeff', '#29251f', 1.4]}/><directionalLight castShadow position={[4,7,5]} intensity={3}/><pointLight position={[-4,2,-3]} intensity={4} color="#7058ff"/>
         {format === 'urdf' ? <UrdfModel url={url} kind={kind} motion={motion} playing={playing} onReady={ready} resetToken={resetToken}/> : format === 'glb' ? <GltfModel url={url} onReady={ready} animate={animate} playing={playing}/> : format === 'obj' ? <ObjModel url={url} onReady={ready}/> : <FbxModel url={url} onReady={ready} animate={animate} playing={playing}/>}
-        {includeScene && <><Grid args={[20,20]} cellColor="#30343d" sectionColor="#515866" fadeDistance={18} fadeStrength={1.5} position={[0,-1.2,0]}/><ContactShadows position={[0,-1.18,0]} opacity={0.5} scale={8} blur={2}/></>}
+        {includeScene && (format === 'urdf' && motion ? <><UrdfScene kind={kind}/><ContactShadows position={[0,-1.12,0]} opacity={.42} scale={8} blur={2}/></> : <><Grid args={[20,20]} cellColor="#30343d" sectionColor="#515866" fadeDistance={18} fadeStrength={1.5} position={[0,-1.2,0]}/><ContactShadows position={[0,-1.18,0]} opacity={0.5} scale={8} blur={2}/></>)}
         <OrbitControls makeDefault enableDamping target={[0,.2,0]} minDistance={2.2} maxDistance={10}/>
         <CameraPreset view={view}/>
       </Suspense>
@@ -330,7 +331,7 @@ function Workspace({ home }) {
     const mimeType = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find(type => MediaRecorder.isTypeSupported(type));
     if (!mimeType) return alert('此浏览器不支持 WebM 录制。');
     const stream = canvas.captureStream(30);
-    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 5_000_000 });
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 10_000_000 });
     const chunks = [];
     recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
     recorder.onstop = () => {
@@ -358,13 +359,13 @@ function Workspace({ home }) {
       <label className="setting-label">Motion settings <span>Advanced</span></label>
       <div className="setting-row"><span><Gauge size={16}/> Intensity</span><div className="segmented"><button>Low</button><button className="active">Medium</button><button>High</button></div></div>
       <div className="setting-row"><span><Clock3 size={16}/> Duration</span><button className="select">2 sec <ChevronDown size={13}/></button></div>
-      <div className="scene-option"><div><span><Layers3 size={16}/> Include scene</span><small>{modelFormat==='urdf'?'为关节动画添加预览环境；可录制 WebM，不生成 MP4':'Add the rendered environment and multi-view video'}</small></div><button className={includeScene?'on':''} onClick={()=>{setIncludeScene(value=>!value);setGenerated(false);setProgress(0)}} aria-label="Toggle scene"><i/></button></div>
+      <div className="scene-option"><div><span><Layers3 size={16}/> Include scene</span><small>{modelFormat==='urdf'?'添加 3D 场景；可切换视角并录制 WebM':'Add the rendered environment and multi-view video'}</small></div><button className={includeScene?'on':''} onClick={()=>{setIncludeScene(value=>!value);setGenerated(false);setProgress(0)}} aria-label="Toggle scene"><i/></button></div>
       <button className="generate" onClick={generate} disabled={progress > 0 && progress < 100}>{progress > 0 && progress < 100 ? <><span className="spinner"/>Generating · {progress}%</> : <><Zap size={17} fill="currentColor"/>Generate motion<span>⌘ ↵</span></>}</button>
       <p className="generate-note"><Sparkles size={12}/> Each generation creates one animation</p>
     </section>
     <section className="canvas-area">
       {!generated && !(progress > 0 && progress < 100) ? <div className="motion-stage-empty"><div>{includeScene?<Layers3/>:<Box/>}</div><b>Your motion will appear here</b><span>{modelFormat === 'urdf' ? `URDF joint animation · ${includeScene?'With':'No'} scene` : includeScene ? 'Scene render · Four camera views' : 'Transparent stage · Animated FBX output'}</span></div> : !generated ? <div className="center-generating"><div className="gen-orb"><span/></div><b>Generating motion</b><span>Matching character and movement · {progress}%</span><div><i style={{width:`${progress}%`}}/></div></div> : <>
-        {articulated ? <><div className="fbx-motion-preview"><Viewer url={modelUrl} format="urdf" kind={articulatedResult.key} motion={articulatedResult} playing={playing} view={view} includeScene={includeScene} onCanvasReady={canvas=>outputCanvasRef.current=canvas} resetToken={resetToken}/><span className="result-badge"><i/> {character} · {articulatedResult.label} · URDF 关节动画</span><small><Rotate3d size={12}/> 可拖拽查看 · 关节运动遵循 URDF 限位</small></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : includeScene ? <><div className="motion-preview"><video key={videoUrl} ref={videoRef} src={videoUrl} poster={posterUrl} preload="auto" autoPlay muted loop playsInline/><span className="result-badge"><i/> {sample.key} · SCENE · 1080P</span></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : <div className="fbx-motion-preview"><Viewer url={animatedWebUrl} format="glb" animate playing={playing}/><span className="result-badge"><i/> {sample.key} · FBX / NO SCENE</span><small><Rotate3d size={12}/> Drag to inspect animated mesh</small></div>}
+        {articulated ? <><div className="fbx-motion-preview"><Viewer url={modelUrl} format="urdf" kind={articulatedResult.key} motion={articulatedResult} playing={playing} view={view} includeScene={includeScene} onCanvasReady={canvas=>outputCanvasRef.current=canvas} resetToken={resetToken}/><span className="result-badge"><i/> {character} · {articulatedResult.label} · {includeScene?'3D SCENE':'URDF 关节动画'}</span></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : includeScene ? <><div className="motion-preview"><video key={videoUrl} ref={videoRef} src={videoUrl} poster={posterUrl} preload="auto" autoPlay muted loop playsInline/><span className="result-badge"><i/> {sample.key} · SCENE · 1080P</span></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : <div className="fbx-motion-preview"><Viewer url={animatedWebUrl} format="glb" animate playing={playing}/><span className="result-badge"><i/> {sample.key} · FBX / NO SCENE</span><small><Rotate3d size={12}/> Drag to inspect animated mesh</small></div>}
         <div className="playbar"><button className="play" onClick={toggle}>{playing?<Pause fill="currentColor"/>:<Play fill="currentColor"/>}</button><span>00:00</span><div className="timeline"><i style={{width: playing?'58%':'34%'}}/><b style={{left: playing?'58%':'34%'}}/></div><span>00:02</span><button>1×</button><button><Expand size={15}/></button></div>
       </>}
     </section>
