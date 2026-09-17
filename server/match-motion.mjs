@@ -18,12 +18,6 @@ const b1Actions = [
   { key:'bow', label:'俯身', words:['俯身','低头','鞠躬'] },
   { key:'paw', label:'抬右前爪', words:['抬右前爪','抬爪','挥爪'] }
 ];
-const shortPrompts = {
-  '武僧': { '合掌': '武僧@Lv1', '扫腿': '武僧@Lv2', '直拳': '武僧@Lv3' },
-  '叶问': { '摊手': '叶问@Lv1', '连环拳': '叶问@Lv2', '肘击': '叶问@Lv3' },
-  '虎头少女': { '跳舞': '虎头少女@Lv1', '格挡出拳': '虎头少女@Lv2', '旋转踢': '虎头少女@Lv3' }
-};
-
 function matchCabinet(prompt) {
   const target = Object.fromEntries(Array.from({ length: 6 }, (_, index) => [`joint_${index}`, 0]));
   const starts = { ...target };
@@ -67,11 +61,6 @@ export function matchMotion(character, prompt) {
     return { type:'urdf', key:'b1', character, action:action.key, label:action.label, duration };
   }
   if (character === '组合柜') return matchCabinet(text);
-  const alias = Object.entries(shortPrompts[character] || {}).find(([word]) => text.includes(word));
-  if (alias) {
-    const item = catalog.find(entry => entry.key === alias[1]);
-    return { type: 'catalog', key: item.key, character: item.character, level: item.level };
-  }
   const candidates = catalog.filter(item => item.character === character);
   const normalized = text.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, ' ').trim();
   let match = candidates.find(item => item.prompt.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, ' ').trim() === normalized);

@@ -18,14 +18,14 @@ npm run dev
 - 使用从 Blender 导出的带材质槽 GLB 进行网页预览，保留 cloth、skin、shoe、hair 等角色材质分区
 - 鼠标旋转、缩放和平移 Mesh
 - 拖放或选择新的 FBX / OBJ / GLB 文件
-- Prompt 输入、快捷提示词与运动参数
+- 自由填写中文 Prompt 与运动参数；工作台不展示示例 Mesh 或 Prompt 提示
 - 模拟生成进度及播放控制
 - 使用 `fbx_final` 中真实视频的前、后、左、右四视角结果
 - 可选择输出模式：原有角色默认导出无场景动画 FBX；开启 Include scene 后输出带场景四视角视频。URDF 示例的开关控制预览环境，并可录制当前视角 WebM
 - 基于宇树官方 URDF 的 G1（29 个可动关节）、B1（12 个可动关节）和基于 PartNet-Mobility 40417 URDF 的组合柜（6 个可动关节）示例
 - 简短中文动作描述：G1 支持太极、跑步、波比跳、挥手、深蹲；B1 支持慢走、小跑、坐下、俯身、抬右前爪；组合柜支持抽屉和柜门的组合开合
 
-工作台初始为空。点击首页案例只会打开空白工作台，不会预加载 Mesh。在工作台下载下列输入 GLB，拖入 **Source mesh**，输入对应的中文 Prompt，再点击 **Generate motion**：
+工作台初始为空。点击首页案例只会打开空白工作台，不会预加载 Mesh。请从本地手动选择 GLB / OBJ / FBX，拖入 **Source mesh**，自行填写对应的中文 Prompt，再点击 **Generate motion**。工作台不提供示例文件下载或动作提示。项目中的三个 URDF 输入 GLB 位于：
 
 - [`AETHR-G1.glb`](public/input-models/AETHR-G1.glb)：打太极、跑步、波比跳、挥手、深蹲（也可输入“下蹲”）
 - [`AETHR-B1.glb`](public/input-models/AETHR-B1.glb)：慢走、小跑、坐下、俯身、抬右前爪
@@ -35,15 +35,22 @@ npm run dev
 
 G1 和 B1 的关节树、轴、限位及可视化 Mesh 来自 [Unitree 官方 `unitree_ros`](https://github.com/unitreerobotics/unitree_ros/tree/master/robots) 中的 `g1_29dof_mode_15.urdf` 和 `b1.urdf`；柜体来自本地 PartNet-Mobility `raw_dataset/40417/mobility.urdf`。网页输入 GLB 位于 `public/input-models/`，关节元数据和海报位于 `public/unitree/`，URDF 快照位于 `assets/urdf/`。柜体有 2 个抽屉、4 扇门；“左侧门”控制左侧两扇门。关节体结果可交互切换四视角，导出每秒 30 帧的关节曲线 JSON，并使用浏览器录制当前视角的 WebM 视频；当前并不生成 FBX 或预渲染 MP4。G1/B1 动作是遵循 URDF 关节限位的网页运动演示，没有经过动力学、平衡和真实机器人安全验证，不能直接下发到硬件。
 
-可输入的简短中文示例：
+当前支持的 Mesh 与中文 Prompt 一一对应如下（这些词只在说明文档和后端，不在工作台提示）：
 
-```text
-宇树 G1：打太极 / 跑步 / 波比跳 / 挥手 / 深蹲
-宇树 B1：慢走 / 小跑 / 坐下 / 俯身 / 抬右前爪
-组合柜：上方左边的抽屉打开，左侧门打开
-组合柜：抽屉全部打开，门全部打开
-组合柜：抽屉全部闭合，门全部打开
-```
+| 输入 Mesh | Prompt |
+| --- | --- |
+| 武僧@Lv1 | 合掌 |
+| 武僧@Lv2 | 扫腿 |
+| 武僧@Lv3 | 直拳 |
+| 叶问@Lv1 | 摊手 |
+| 叶问@Lv2 | 连环拳 |
+| 叶问@Lv3 | 肘击 |
+| 虎头少女@Lv1 | 跳舞 |
+| 虎头少女@Lv2 | 格挡出拳 |
+| 虎头少女@Lv3 | 旋转踢 |
+| 宇树 G1 | 打太极、跑步、波比跳、挥手、下蹲 |
+| 宇树 B1 | 慢走、小跑、坐下、俯身、抬右前爪 |
+| 组合柜 | 上方左边的抽屉打开，左侧门打开；抽屉全部打开，门全部打开；抽屉全部闭合，门全部打开 |
 
 九套角色动作匹配位于 `server/motion-catalog.json`，URDF 示例中文指令解析位于 `server/match-motion.mjs`，关节动画曲线位于 `src/urdf-motion.js`。当前是针对已有角色动作和 URDF 示例的演示流程，不是开放式文本生成模型。
 

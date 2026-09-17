@@ -14,10 +14,18 @@ test('G1 and B1 Chinese prompts select distinct URDF motions', () => {
   assert.throws(() => matchMotion('宇树 B1', '打太极'));
 });
 
-test('existing characters also accept short Chinese prompts', () => {
-  assert.equal(matchMotion('武僧', '扫腿').key, '武僧@Lv2');
-  assert.equal(matchMotion('叶问', '连环拳').key, '叶问@Lv2');
-  assert.equal(matchMotion('虎头少女', '跳舞').key, '虎头少女@Lv1');
+test('all nine character clips map to distinct short Chinese prompts', () => {
+  const prompts = {
+    武僧: ['合掌', '扫腿', '直拳'],
+    叶问: ['摊手', '连环拳', '肘击'],
+    虎头少女: ['跳舞', '格挡出拳', '旋转踢']
+  };
+  for (const [character, actions] of Object.entries(prompts)) {
+    actions.forEach((prompt, index) => {
+      assert.equal(matchMotion(character, prompt).key, `${character}@Lv${index + 1}`);
+    });
+  }
+  assert.throws(() => matchMotion('武僧', '跳舞'));
 });
 
 test('cabinet parses left drawer and left doors independently', () => {

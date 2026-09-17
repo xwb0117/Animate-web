@@ -317,7 +317,6 @@ function Workspace({ home }) {
   const animatedFbxUrl = sample ? `/fbx/${sample.key}.fbx` : '';
   const animatedWebUrl = sample ? `/models/${sample.key}.glb` : '';
   const articulated = Boolean(articulatedResult);
-  const exampleTags = character === '宇树 G1' ? ['打太极','跑步','波比跳','挥手','下蹲'] : character === '宇树 B1' ? ['慢走','小跑','坐下','俯身','抬右前爪'] : character === '组合柜' ? ['上方左边的抽屉打开，左侧门打开','抽屉全部打开，门全部打开','抽屉全部闭合，门全部打开'] : character === '叶问' ? ['摊手','连环拳','肘击'] : character === '虎头少女' ? ['跳舞','格挡出拳','旋转踢'] : character === '武僧' ? ['合掌','扫腿','直拳'] : [];
   const exportArticulated = () => {
     if (!articulatedResult) return;
     const data = { format:'AETHR URDF joint-motion v1', source:character, jointDefinition:`/unitree/${articulatedResult.key}/joints.json`, prompt, fps:30, duration:articulatedResult.duration, frames:sampleUrdfFrames(articulatedResult) };
@@ -352,12 +351,10 @@ function Workspace({ home }) {
       <div className={`upload-zone ${modelUrl?'has-model':''}`} onClick={()=>!modelUrl&&inputRef.current.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();e.stopPropagation();acceptFile(e.dataTransfer.files[0])}}>
         <input ref={inputRef} type="file" accept=".fbx,.obj,.glb" onChange={e=>{acceptFile(e.target.files[0]);e.target.value=''}}/>{modelUrl ? <div className="source-preview"><Viewer url={modelUrl} format={modelFormat} kind={modelKind} onDrop={e=>{e.preventDefault();acceptFile(e.dataTransfer.files[0])}}/><span><Rotate3d size={12}/> Drag to inspect mesh</span></div> : <><Upload/><b>{checkingInput?'Reading model…':'Drop a 3D model'}</b><span>or click to browse</span><small>FBX · OBJ · GLB &nbsp; up to 100MB</small></>}
       </div>
-      {!modelUrl && <div className="input-downloads"><span>下载示例 Mesh，再拖入上方</span><div>{Object.entries(inputModels).map(([kind, model])=><a key={kind} href={model.url} download={model.filename}><Download size={12}/>{model.label} GLB</a>)}</div></div>}
       {modelUrl && <div className="file-chip"><Box size={18}/><div><b>{modelName}</b><span>{character ? `${character} · Ready to animate` : 'Preview only · URDF joints not recognized'}</span></div><button onClick={()=>inputRef.current.click()}>Replace</button></div>}
       <div className="divider"/>
       <div className="section-title"><span className="step-pill">02</span><h2>Describe motion</h2></div>
-      <div className="prompt-box"><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="用简单中文描述动作，例如：打太极、跑步、打开左侧门…"/><div><span>{prompt.length} / 500</span><button><Sparkles size={14}/> Enhance</button></div></div>
-      <div className="prompt-tags">{exampleTags.map(tag=><button key={tag} onClick={()=>setPrompt(tag)}>{tag}</button>)}</div>
+      <div className="prompt-box"><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} maxLength={500} aria-label="Describe motion"/><div><span>{prompt.length} / 500</span></div></div>
       <label className="setting-label">Motion settings <span>Advanced</span></label>
       <div className="setting-row"><span><Gauge size={16}/> Intensity</span><div className="segmented"><button>Low</button><button className="active">Medium</button><button>High</button></div></div>
       <div className="setting-row"><span><Clock3 size={16}/> Duration</span><button className="select">2 sec <ChevronDown size={13}/></button></div>
