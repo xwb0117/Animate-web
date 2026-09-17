@@ -1,0 +1,91 @@
+{
+  "robot": "cabinet",
+  "source": "mobility.urdf",
+  "root_link": "base",
+  "joints": {
+    "joint_0": {
+      "type": "revolute",
+      "parent": "link_6",
+      "child": "link_0",
+      "axis": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "limit": [
+        -0.0,
+        1.5707963267948966
+      ]
+    },
+    "joint_1": {
+      "type": "revolute",
+      "parent": "link_6",
+      "child": "link_1",
+      "axis": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "limit": [
+        -0.0,
+        1.5707963267948966
+      ]
+    },
+    "joint_2": {
+      "type": "prismatic",
+      "parent": "link_6",
+      "child": "link_2",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "limit": [
+        0.0,
+        0.3599999999999999
+      ]
+    },
+    "joint_3": {
+      "type": "prismatic",
+      "parent": "link_6",
+      "child": "link_3",
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "limit": [
+        0.0,
+        0.3599999999999999
+      ]
+    },
+    "joint_4": {
+      "type": "revolute",
+      "parent": "link_6",
+      "child": "link_4",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limit": [
+        0.0,
+        1.5707963267948966
+      ]
+    },
+    "joint_5": {
+      "type": "revolute",
+      "parent": "link_6",
+      "child": "link_5",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limit": [
+        0.0,
+        1.5707963267948966
+      ]
+    }
+  }
+}

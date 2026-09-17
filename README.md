@@ -23,23 +23,30 @@ npm run dev
 - 使用 `fbx_final` 中真实视频的前、后、左、右四视角结果
 - 可选择输出模式：默认导出无场景动画 FBX；开启 Include scene 后输出带场景四视角视频
 - 示例角色一键切换
-- 宇树机器人与六关节组合柜示例，可在首页进入，也可从工作台加载示例 Mesh
-- 用简短中文控制机器人的太极、跑步、波比跳、挥手、深蹲，或组合柜的抽屉/柜门开合
+- 基于宇树官方 URDF 的 G1（29 个可动关节）、B1（12 个可动关节）和基于 PartNet-Mobility 40417 URDF 的组合柜（6 个可动关节）示例；首页与工作台均可加载
+- 简短中文动作描述：G1 支持太极、跑步、波比跳、挥手、深蹲；B1 支持慢走、小跑、坐下、俯身、抬右前爪；组合柜支持抽屉和柜门的组合开合
 
-工作台初始为空。上传角色示例 Mesh 或加载关节体示例、输入 Prompt 并点击生成后，才会显示对应的动画结果。也可直接拖入上述两个数据集的 `glb/c000_t000.glb`，网站会匹配其关节分件与定义；其他任意 GLB 目前只能预览，不能自动获得关节动画。
+工作台初始为空。上传已有角色的示例 Mesh，或点击 G1、B1、组合柜示例，再输入 Prompt 并点击生成，才会显示对应的动画结果。PartNet 40417 的原始 `glb/c000_t000.glb` 也可拖入并识别为组合柜；其他任意 GLB 目前只能预览，不能自动获得关节动画。
 
-关节体示例的 Mesh 来自 `HumanoidRobot/000_total12` 与 `StorageFurniture/40417/000_total06` 的 GLB 零件；关节轴与限位来自同目录的 `joint_dict_glb.json`。这两个样本目录没有独立的 `.urdf` 文件，因此当前实现根据导出的关节数据还原运动。机器人只有 12 个可动俯仰关节，跑步是原地跑示意，波比跳是限位内的下蹲与起跳示意，并非经动力学验证的完整动作。柜体有 2 个抽屉、4 扇门；“左侧门”控制左侧两扇门。关节体结果可交互切换四视角，导出每秒 30 帧的关节曲线 JSON，并使用浏览器录制当前视角的 WebM 视频；目前没有为这两类示例生成 FBX 或预渲染 MP4。
+G1 和 B1 的关节树、轴、限位及可视化 Mesh 来自 [Unitree 官方 `unitree_ros`](https://github.com/unitreerobotics/unitree_ros/tree/master/robots) 中的 `g1_29dof_mode_15.urdf` 和 `b1.urdf`；柜体来自本地 PartNet-Mobility `raw_dataset/40417/mobility.urdf`。网页用的可动 GLB、关节元数据和海报位于 `public/unitree/`；URDF 快照位于 `assets/urdf/`。柜体有 2 个抽屉、4 扇门；“左侧门”控制左侧两扇门。关节体结果可交互切换四视角，导出每秒 30 帧的关节曲线 JSON，并使用浏览器录制当前视角的 WebM 视频；当前并不生成 FBX 或预渲染 MP4。G1/B1 动作是遵循 URDF 关节限位的网页运动演示，没有经过动力学、平衡和真实机器人安全验证，不能直接下发到硬件。
 
 可输入的简短中文示例：
 
 ```text
-宇树机器人：打太极 / 跑步 / 波比跳 / 挥手 / 深蹲
+宇树 G1：打太极 / 跑步 / 波比跳 / 挥手 / 深蹲
+宇树 B1：慢走 / 小跑 / 坐下 / 俯身 / 抬右前爪
 组合柜：上方左边的抽屉打开，左侧门打开
 组合柜：抽屉全部打开，门全部打开
 组合柜：抽屉全部闭合，门全部打开
 ```
 
-九套角色动作匹配位于 `server/motion-catalog.json`，关节体中文指令解析位于 `server/match-motion.mjs`。当前是针对已有角色动作和新关节体的演示流程，不是开放式文本生成模型。
+九套角色动作匹配位于 `server/motion-catalog.json`，URDF 示例中文指令解析位于 `server/match-motion.mjs`，关节动画曲线位于 `src/urdf-motion.js`。当前是针对已有角色动作和 URDF 示例的演示流程，不是开放式文本生成模型。
+
+如需重新生成 URDF 示例资产，先取得 Unitree 官方 `unitree_ros` 仓库及 PartNet-Mobility 40417 数据，再安装 Python `trimesh`、`numpy`、`pycollada`，运行：
+
+```bash
+python scripts/build_unitree_models.py --source /path/to/unitree_ros --cabinet-urdf /path/to/40417/mobility.urdf --output public/unitree
+```
 
 运行测试：
 

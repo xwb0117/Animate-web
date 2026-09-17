@@ -7,7 +7,8 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import * as THREE from 'three';
-import ArticulatedModel, { sampleArticulatedFrames } from './ArticulatedModel.jsx';
+import UrdfModel from './UrdfModel.jsx';
+import { sampleUrdfFrames } from './urdf-motion.js';
 import {
   ArrowRight, Box, ChevronDown, CircleHelp, Clock3, Download, Expand,
   Film, FolderOpen, Gauge, Grid3X3, Layers3, Menu, MousePointer2,
@@ -88,10 +89,11 @@ function Landing({ enter }) {
     <section className="articulated-cases shell" id="articulated-cases">
       <span className="section-no">02 / ARTICULATED MOTION</span>
       <h2>Beyond characters. <em>Every joint moves.</em></h2>
-      <p>从人形机器人的运动到柜门和抽屉的组合控制，直接在工作台拖拽查看。</p>
+      <p>基于真实 URDF 关节结构：人形机器人、四足机器人与组合柜，都可在工作台拖拽查看。</p>
       <div className="case-grid">
-        <button className="case-card" onClick={() => enter('robot')}><img src="/articulated/robot/poster.png" alt="宇树人形机器人"/><span><small>12 MOVING JOINTS · HUMANOID</small><b>宇树机器人</b><em>打太极 · 跑步 · 波比跳</em></span><ArrowRight/></button>
-        <button className="case-card" onClick={() => enter('cabinet')}><img src="/articulated/cabinet/poster.png" alt="多关节组合柜"/><span><small>6 MOVING JOINTS · FURNITURE</small><b>组合柜</b><em>左右抽屉与四扇柜门自由组合</em></span><ArrowRight/></button>
+        <button className="case-card" onClick={() => enter('g1')}><img src="/unitree/g1/poster.png" alt="宇树 G1 人形机器人"/><span><small>29 DOF · OFFICIAL URDF</small><b>宇树 G1</b><em>打太极 · 跑步 · 波比跳</em></span><ArrowRight/></button>
+        <button className="case-card" onClick={() => enter('b1')}><img src="/unitree/b1/poster.png" alt="宇树 B1 四足机器人"/><span><small>12 DOF · OFFICIAL URDF</small><b>宇树 B1</b><em>慢走 · 小跑 · 坐下</em></span><ArrowRight/></button>
+        <button className="case-card" onClick={() => enter('cabinet')}><img src="/unitree/cabinet/poster.png" alt="PartNet 多关节组合柜"/><span><small>6 JOINTS · PARTNET URDF</small><b>组合柜</b><em>左右抽屉与四扇柜门自由组合</em></span><ArrowRight/></button>
       </div>
     </section>
 
@@ -198,9 +200,9 @@ function GltfModel({ url, onReady, animate = false, playing = true }) {
 class ViewerErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { failed: false }; }
   static getDerivedStateFromError() { return { failed: true }; }
-  componentDidCatch(error) { console.error('3D viewer failed:', error); }
+  componentDidCatch(error) { console.error('3D viewer failed:', error); this.props.onError?.(); }
   render() {
-    if (this.state.failed) return <div className="viewer-error"><Box/><b>3D preview unavailable</b><span>请检查浏览器是否开启硬件加速，然后刷新页面重试。</span></div>;
+    if (this.state.failed) return <div className="viewer-error">{this.props.fallbackPoster ? <img src={this.props.fallbackPoster} alt="URDF 模型静态预览"/> : <Box/>}<b>3D preview unavailable</b><span>当前浏览器未启用 WebGL；请开启硬件加速后刷新，以拖动查看模型。</span></div>;
     return this.props.children;
   }
 }
@@ -223,11 +225,11 @@ function Viewer({ url, format, onDrop, animate = false, playing = true, kind, mo
   useEffect(() => setLoaded(false), [url]);
   const ready = React.useCallback(() => setLoaded(true), []);
   return <div className="viewer" onDragOver={e=>e.preventDefault()} onDrop={onDrop}>
-    {url && <ViewerErrorBoundary key={url}><Canvas shadows camera={{ position: [3.4, 1.65, 5.2], fov: 38 }} gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: Boolean(onCanvasReady) }} onCreated={({ gl }) => onCanvasReady?.(gl.domElement)}>
+    {url && <ViewerErrorBoundary key={url} onError={ready} fallbackPoster={format === 'urdf' ? `/unitree/${kind}/poster.png` : null}><Canvas shadows camera={{ position: [3.4, 1.65, 5.2], fov: 38 }} gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: Boolean(onCanvasReady) }} onCreated={({ gl }) => onCanvasReady?.(gl.domElement)}>
       <Suspense fallback={null}>
         <color attach="background" args={['#101216']}/>
         <ambientLight intensity={1.2}/><hemisphereLight args={['#e7eeff', '#29251f', 1.4]}/><directionalLight castShadow position={[4,7,5]} intensity={3}/><pointLight position={[-4,2,-3]} intensity={4} color="#7058ff"/>
-        {format === 'articulated' ? <ArticulatedModel kind={kind} motion={motion} playing={playing} onReady={ready} resetToken={resetToken}/> : format === 'glb' ? <GltfModel url={url} onReady={ready} animate={animate} playing={playing}/> : format === 'obj' ? <ObjModel url={url} onReady={ready}/> : <FbxModel url={url} onReady={ready} animate={animate} playing={playing}/>}
+        {format === 'urdf' ? <UrdfModel kind={kind} motion={motion} playing={playing} onReady={ready} resetToken={resetToken}/> : format === 'glb' ? <GltfModel url={url} onReady={ready} animate={animate} playing={playing}/> : format === 'obj' ? <ObjModel url={url} onReady={ready}/> : <FbxModel url={url} onReady={ready} animate={animate} playing={playing}/>}
         <Grid args={[20,20]} cellColor="#30343d" sectionColor="#515866" fadeDistance={18} fadeStrength={1.5} position={[0,-1.2,0]}/>
         <ContactShadows position={[0,-1.18,0]} opacity={0.5} scale={8} blur={2}/>
         <OrbitControls makeDefault enableDamping target={[0,.2,0]} minDistance={2.2} maxDistance={10}/>
@@ -260,22 +262,19 @@ function Workspace({ home, exampleKind }) {
   const outputCanvasRef = useRef();
 
   const loadExample = kind => {
-    setSample(null); setArticulatedResult(null); setCharacter(kind === 'robot' ? '宇树机器人' : '组合柜');
-    setModelUrl(`articulated:${kind}`); setModelName(kind === 'robot' ? '宇树机器人 · 原始关节模型' : '组合柜 · 原始关节模型');
-    setModelFormat('articulated'); setPrompt(''); setGenerated(false); setProgress(0); setPlaying(false);
+    const labels = { g1:'宇树 G1', b1:'宇树 B1', cabinet:'组合柜' };
+    setSample(null); setArticulatedResult(null); setCharacter(labels[kind]);
+    setModelUrl(`urdf:${kind}`); setModelName(`${labels[kind]} · URDF Mesh`);
+    setModelFormat('urdf'); setPrompt(''); setGenerated(false); setProgress(0); setPlaying(false);
   };
   useEffect(() => { if (exampleKind) loadExample(exampleKind); }, [exampleKind]);
 
   const acceptFile = file => {
     if (!file) return;
     if (!/\.(fbx|obj|glb)$/i.test(file.name)) return alert('当前可预览 FBX、OBJ 或 GLB 格式');
-    // The source datasets use the same c000_t000.glb filename. Their exact sizes
-    // distinguish the two known meshes without confusing an arbitrary upload.
-    if (file.name === 'c000_t000.glb' && file.size === 19037648) {
-      loadExample('robot'); setModelName(`${file.name} · 宇树机器人关节示例`); return;
-    }
+    // This exact GLB belongs to the PartNet cabinet already paired with its URDF.
     if (file.name === 'c000_t000.glb' && file.size === 2241924) {
-      loadExample('cabinet'); setModelName(`${file.name} · 组合柜关节示例`); return;
+      loadExample('cabinet'); setModelName(`${file.name} · PartNet 组合柜`); return;
     }
     const key = file.name.replace(/\.(fbx|obj|glb)$/i, '');
     const matched = samples.find(item => item.key === key) || null;
@@ -289,15 +288,15 @@ function Workspace({ home, exampleKind }) {
   const generate = async () => {
     if (!modelUrl) return alert('请先上传 Mesh');
     if (!prompt.trim()) return alert('请输入动作描述');
-    if (!character) return alert('当前演示支持武僧、叶问、虎头少女、宇树机器人和组合柜的示例 Mesh。');
+    if (!character) return alert('当前演示支持武僧、叶问、虎头少女、宇树 G1、宇树 B1 和组合柜的示例 Mesh。');
     setGenerated(false); setProgress(0);
     let p = 0; const timer = setInterval(() => { p = Math.min(p + 3, 88); setProgress(p); }, 55);
     try {
       const response = await fetch('/api/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ character, prompt }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Motion not found');
-      const selected = result.type === 'articulated' ? null : samples.find(item => item.key === result.key);
-      setTimeout(() => { clearInterval(timer); setSample(selected); setArticulatedResult(result.type === 'articulated' ? result : null); setProgress(100); setGenerated(true); setPlaying(true); setView('front'); }, 650);
+      const selected = result.type === 'urdf' ? null : samples.find(item => item.key === result.key);
+      setTimeout(() => { clearInterval(timer); setSample(selected); setArticulatedResult(result.type === 'urdf' ? result : null); setProgress(100); setGenerated(true); setPlaying(true); setView('front'); }, 650);
     } catch (error) {
       clearInterval(timer); setProgress(0); alert(`${error.message}\n请使用该角色对应的动作 Prompt。`);
     }
@@ -308,10 +307,10 @@ function Workspace({ home, exampleKind }) {
   const animatedFbxUrl = sample ? `/fbx/${sample.key}.fbx` : '';
   const animatedWebUrl = sample ? `/models/${sample.key}.glb` : '';
   const articulated = Boolean(articulatedResult);
-  const exampleTags = character === '宇树机器人' ? ['打太极','跑步','波比跳','挥手','深蹲'] : character === '组合柜' ? ['上方左边的抽屉打开，左侧门打开','抽屉全部打开，门全部打开','抽屉全部闭合，门全部打开'] : character === '叶问' ? ['摊手','连环拳','肘击'] : character === '虎头少女' ? ['跳舞','格挡出拳','旋转踢'] : ['合掌','扫腿','直拳'];
+  const exampleTags = character === '宇树 G1' ? ['打太极','跑步','波比跳','挥手','深蹲'] : character === '宇树 B1' ? ['慢走','小跑','坐下','俯身','抬右前爪'] : character === '组合柜' ? ['上方左边的抽屉打开，左侧门打开','抽屉全部打开，门全部打开','抽屉全部闭合，门全部打开'] : character === '叶问' ? ['摊手','连环拳','肘击'] : character === '虎头少女' ? ['跳舞','格挡出拳','旋转踢'] : ['合掌','扫腿','直拳'];
   const exportArticulated = () => {
     if (!articulatedResult) return;
-    const data = { format:'AETHR joint-motion v1', source:character, prompt, fps:30, duration:articulatedResult.duration, frames:sampleArticulatedFrames(articulatedResult) };
+    const data = { format:'AETHR URDF joint-motion v1', source:character, jointDefinition:`/unitree/${articulatedResult.key}/joints.json`, prompt, fps:30, duration:articulatedResult.duration, frames:sampleUrdfFrames(articulatedResult) };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${character}-${articulatedResult.label}.motion.json`; link.click(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   };
@@ -341,9 +340,9 @@ function Workspace({ home, exampleKind }) {
     <section className="controls-panel">
       <div className="panel-head"><div><span className="step-pill">01</span><h2>Source mesh</h2></div><button><X size={17}/></button></div>
       <div className={`upload-zone ${modelUrl?'has-model':''}`} onClick={()=>!modelUrl&&inputRef.current.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();e.stopPropagation();acceptFile(e.dataTransfer.files[0])}}>
-        <input ref={inputRef} type="file" accept=".fbx,.obj,.glb" onChange={e=>acceptFile(e.target.files[0])}/>{modelUrl ? <div className="source-preview"><Viewer url={modelUrl} format={modelFormat} kind={modelFormat==='articulated' ? modelUrl.split(':')[1] : undefined} onDrop={e=>{e.preventDefault();acceptFile(e.dataTransfer.files[0])}}/><span><Rotate3d size={12}/> Drag to inspect mesh</span></div> : <><Upload/><b>Drop a 3D model</b><span>or click to browse</span><small>FBX · OBJ · GLB &nbsp; up to 100MB</small></>}
+        <input ref={inputRef} type="file" accept=".fbx,.obj,.glb" onChange={e=>acceptFile(e.target.files[0])}/>{modelUrl ? <div className="source-preview"><Viewer url={modelUrl} format={modelFormat} kind={modelFormat==='urdf' ? modelUrl.split(':')[1] : undefined} onDrop={e=>{e.preventDefault();acceptFile(e.dataTransfer.files[0])}}/><span><Rotate3d size={12}/> Drag to inspect mesh</span></div> : <><Upload/><b>Drop a 3D model</b><span>or click to browse</span><small>FBX · OBJ · GLB &nbsp; up to 100MB</small></>}
       </div>
-      {!modelUrl && <div className="example-loader"><span>或试用关节体 Mesh</span><button onClick={()=>loadExample('robot')}>宇树机器人</button><button onClick={()=>loadExample('cabinet')}>组合柜</button></div>}
+      {!modelUrl && <div className="example-loader"><span>或试用 URDF 示例</span><button onClick={()=>loadExample('g1')}>宇树 G1</button><button onClick={()=>loadExample('b1')}>宇树 B1</button><button onClick={()=>loadExample('cabinet')}>组合柜</button></div>}
       {modelUrl && <div className="file-chip"><Box size={18}/><div><b>{modelName}</b><span>Static mesh · Ready to animate</span></div><button onClick={()=>inputRef.current.click()}>Replace</button></div>}
       <div className="divider"/>
       <div className="section-title"><span className="step-pill">02</span><h2>Describe motion</h2></div>
@@ -352,13 +351,13 @@ function Workspace({ home, exampleKind }) {
       <label className="setting-label">Motion settings <span>Advanced</span></label>
       <div className="setting-row"><span><Gauge size={16}/> Intensity</span><div className="segmented"><button>Low</button><button className="active">Medium</button><button>High</button></div></div>
       <div className="setting-row"><span><Clock3 size={16}/> Duration</span><button className="select">2 sec <ChevronDown size={13}/></button></div>
-      {modelFormat === 'articulated' ? <div className="scene-option"><div><span><Layers3 size={16}/> 交互式 3D 预览</span><small>此关节示例尚无场景视频；可切换四视角并导出关节曲线</small></div></div> : <div className="scene-option"><div><span><Layers3 size={16}/> Include scene</span><small>Add the rendered environment and multi-view video</small></div><button className={includeScene?'on':''} onClick={()=>{setIncludeScene(value=>!value);setGenerated(false);setProgress(0)}} aria-label="Toggle scene"><i/></button></div>}
+      {modelFormat === 'urdf' ? <div className="scene-option"><div><span><Layers3 size={16}/> URDF 关节预览</span><small>可切换四视角、导出关节曲线或录制 WebM；暂无预渲染场景视频</small></div></div> : <div className="scene-option"><div><span><Layers3 size={16}/> Include scene</span><small>Add the rendered environment and multi-view video</small></div><button className={includeScene?'on':''} onClick={()=>{setIncludeScene(value=>!value);setGenerated(false);setProgress(0)}} aria-label="Toggle scene"><i/></button></div>}
       <button className="generate" onClick={generate} disabled={progress > 0 && progress < 100}>{progress > 0 && progress < 100 ? <><span className="spinner"/>Generating · {progress}%</> : <><Zap size={17} fill="currentColor"/>Generate motion<span>⌘ ↵</span></>}</button>
       <p className="generate-note"><Sparkles size={12}/> Each generation creates one animation</p>
     </section>
     <section className="canvas-area">
-      {!generated && !(progress > 0 && progress < 100) ? <div className="motion-stage-empty"><div>{includeScene?<Layers3/>:<Box/>}</div><b>Your motion will appear here</b><span>{includeScene?'Scene render · Four camera views':'Transparent stage · Animated FBX output'}</span></div> : !generated ? <div className="center-generating"><div className="gen-orb"><span/></div><b>Generating motion</b><span>Matching character and movement · {progress}%</span><div><i style={{width:`${progress}%`}}/></div></div> : <>
-        {articulated ? <><div className="fbx-motion-preview"><Viewer url={`articulated:${articulatedResult.key}`} format="articulated" kind={articulatedResult.key} motion={articulatedResult} playing={playing} view={view} onCanvasReady={canvas=>outputCanvasRef.current=canvas} resetToken={resetToken}/><span className="result-badge"><i/> {character} · {articulatedResult.label} · 关节动画</span><small><Rotate3d size={12}/> 可拖拽查看 · 关节运动遵循原始限位</small></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : includeScene ? <><div className="motion-preview"><video key={videoUrl} ref={videoRef} src={videoUrl} poster={posterUrl} preload="auto" autoPlay muted loop playsInline/><span className="result-badge"><i/> {sample.key} · SCENE · 1080P</span></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : <div className="fbx-motion-preview"><Viewer url={animatedWebUrl} format="glb" animate playing={playing}/><span className="result-badge"><i/> {sample.key} · FBX / NO SCENE</span><small><Rotate3d size={12}/> Drag to inspect animated mesh</small></div>}
+      {!generated && !(progress > 0 && progress < 100) ? <div className="motion-stage-empty"><div>{includeScene?<Layers3/>:<Box/>}</div><b>Your motion will appear here</b><span>{modelFormat === 'urdf' ? 'URDF joint animation · Four camera views' : includeScene ? 'Scene render · Four camera views' : 'Transparent stage · Animated FBX output'}</span></div> : !generated ? <div className="center-generating"><div className="gen-orb"><span/></div><b>Generating motion</b><span>Matching character and movement · {progress}%</span><div><i style={{width:`${progress}%`}}/></div></div> : <>
+        {articulated ? <><div className="fbx-motion-preview"><Viewer url={`urdf:${articulatedResult.key}`} format="urdf" kind={articulatedResult.key} motion={articulatedResult} playing={playing} view={view} onCanvasReady={canvas=>outputCanvasRef.current=canvas} resetToken={resetToken}/><span className="result-badge"><i/> {character} · {articulatedResult.label} · URDF 关节动画</span><small><Rotate3d size={12}/> 可拖拽查看 · 关节运动遵循 URDF 限位</small></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : includeScene ? <><div className="motion-preview"><video key={videoUrl} ref={videoRef} src={videoUrl} poster={posterUrl} preload="auto" autoPlay muted loop playsInline/><span className="result-badge"><i/> {sample.key} · SCENE · 1080P</span></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : <div className="fbx-motion-preview"><Viewer url={animatedWebUrl} format="glb" animate playing={playing}/><span className="result-badge"><i/> {sample.key} · FBX / NO SCENE</span><small><Rotate3d size={12}/> Drag to inspect animated mesh</small></div>}
         <div className="playbar"><button className="play" onClick={toggle}>{playing?<Pause fill="currentColor"/>:<Play fill="currentColor"/>}</button><span>00:00</span><div className="timeline"><i style={{width: playing?'58%':'34%'}}/><b style={{left: playing?'58%':'34%'}}/></div><span>00:02</span><button>1×</button><button><Expand size={15}/></button></div>
       </>}
     </section>

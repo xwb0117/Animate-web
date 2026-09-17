@@ -1,0 +1,175 @@
+{
+  "robot": "b1",
+  "source": "b1.urdf",
+  "root_link": "base",
+  "joints": {
+    "FR_hip_joint": {
+      "type": "revolute",
+      "parent": "trunk",
+      "child": "FR_hip",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "limit": [
+        -0.75,
+        0.75
+      ]
+    },
+    "FR_thigh_joint": {
+      "type": "revolute",
+      "parent": "FR_hip",
+      "child": "FR_thigh",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limit": [
+        -1.0,
+        3.5
+      ]
+    },
+    "FR_calf_joint": {
+      "type": "revolute",
+      "parent": "FR_thigh",
+      "child": "FR_calf",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limit": [
+        -2.6,
+        -0.6
+      ]
+    },
+    "FL_hip_joint": {
+      "type": "revolute",
+      "parent": "trunk",
+      "child": "FL_hip",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "limit": [
+        -0.75,
+        0.75
+      ]
+    },
+    "FL_thigh_joint": {
+      "type": "revolute",
+      "parent": "FL_hip",
+      "child": "FL_thigh",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limit": [
+        -1.0,
+        3.5
+      ]
+    },
+    "FL_calf_joint": {
+      "type": "revolute",
+      "parent": "FL_thigh",
+      "child": "FL_calf",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limit": [
+        -2.6,
+        -0.6
+      ]
+    },
+    "RR_hip_joint": {
+      "type": "revolute",
+      "parent": "trunk",
+      "child": "RR_hip",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "limit": [
+        -0.75,
+        0.75
+      ]
+    },
+    "RR_thigh_joint": {
+      "type": "revolute",
+      "parent": "RR_hip",
+      "child": "RR_thigh",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limit": [
+        -1.0,
+        3.5
+      ]
+    },
+    "RR_calf_joint": {
+      "type": "revolute",
+      "parent": "RR_thigh",
+      "child": "RR_calf",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limit": [
+        -2.6,
+        -0.6
+      ]
+    },
+    "RL_hip_joint": {
+      "type": "revolute",
+      "parent": "trunk",
+      "child": "RL_hip",
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "limit": [
+        -0.75,
+        0.75
+      ]
+    },
+    "RL_thigh_joint": {
+      "type": "revolute",
+      "parent": "RL_hip",
+      "child": "RL_thigh",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limit": [
+        -1.0,
+        3.5
+      ]
+    },
+    "RL_calf_joint": {
+      "type": "revolute",
+      "parent": "RL_thigh",
+      "child": "RL_calf",
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "limit": [
+        -2.6,
+        -0.6
+      ]
+    }
+  }
+}
