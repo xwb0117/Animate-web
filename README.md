@@ -21,14 +21,19 @@ npm run dev
 - Prompt 输入、快捷提示词与运动参数
 - 模拟生成进度及播放控制
 - 使用 `fbx_final` 中真实视频的前、后、左、右四视角结果
-- 可选择输出模式：默认导出无场景动画 FBX；开启 Include scene 后输出带场景四视角视频
-- 示例角色一键切换
-- 基于宇树官方 URDF 的 G1（29 个可动关节）、B1（12 个可动关节）和基于 PartNet-Mobility 40417 URDF 的组合柜（6 个可动关节）示例；首页与工作台均可加载
+- 可选择输出模式：原有角色默认导出无场景动画 FBX；开启 Include scene 后输出带场景四视角视频。URDF 示例的开关控制预览环境，并可录制当前视角 WebM
+- 基于宇树官方 URDF 的 G1（29 个可动关节）、B1（12 个可动关节）和基于 PartNet-Mobility 40417 URDF 的组合柜（6 个可动关节）示例
 - 简短中文动作描述：G1 支持太极、跑步、波比跳、挥手、深蹲；B1 支持慢走、小跑、坐下、俯身、抬右前爪；组合柜支持抽屉和柜门的组合开合
 
-工作台初始为空。上传已有角色的示例 Mesh，或点击 G1、B1、组合柜示例，再输入 Prompt 并点击生成，才会显示对应的动画结果。PartNet 40417 的原始 `glb/c000_t000.glb` 也可拖入并识别为组合柜；其他任意 GLB 目前只能预览，不能自动获得关节动画。
+工作台初始为空。点击首页案例只会打开空白工作台，不会预加载 Mesh。在工作台下载下列输入 GLB，拖入 **Source mesh**，输入对应的中文 Prompt，再点击 **Generate motion**：
 
-G1 和 B1 的关节树、轴、限位及可视化 Mesh 来自 [Unitree 官方 `unitree_ros`](https://github.com/unitreerobotics/unitree_ros/tree/master/robots) 中的 `g1_29dof_mode_15.urdf` 和 `b1.urdf`；柜体来自本地 PartNet-Mobility `raw_dataset/40417/mobility.urdf`。网页用的可动 GLB、关节元数据和海报位于 `public/unitree/`；URDF 快照位于 `assets/urdf/`。柜体有 2 个抽屉、4 扇门；“左侧门”控制左侧两扇门。关节体结果可交互切换四视角，导出每秒 30 帧的关节曲线 JSON，并使用浏览器录制当前视角的 WebM 视频；当前并不生成 FBX 或预渲染 MP4。G1/B1 动作是遵循 URDF 关节限位的网页运动演示，没有经过动力学、平衡和真实机器人安全验证，不能直接下发到硬件。
+- [`AETHR-G1.glb`](public/input-models/AETHR-G1.glb)：打太极、跑步、波比跳、挥手、深蹲
+- [`AETHR-B1.glb`](public/input-models/AETHR-B1.glb)：慢走、小跑、坐下、俯身、抬右前爪
+- [`AETHR-Cabinet.glb`](public/input-models/AETHR-Cabinet.glb)：抽屉与柜门的组合开合
+
+网站通过 GLB 中的 URDF 关节节点识别这三个输入，改文件名仍可识别。PartNet 40417 的旧版 `glb/c000_t000.glb` 也可拖入并映射到新版组合柜；其他任意 GLB 目前只能预览，不能自动获得关节动画。
+
+G1 和 B1 的关节树、轴、限位及可视化 Mesh 来自 [Unitree 官方 `unitree_ros`](https://github.com/unitreerobotics/unitree_ros/tree/master/robots) 中的 `g1_29dof_mode_15.urdf` 和 `b1.urdf`；柜体来自本地 PartNet-Mobility `raw_dataset/40417/mobility.urdf`。网页输入 GLB 位于 `public/input-models/`，关节元数据和海报位于 `public/unitree/`，URDF 快照位于 `assets/urdf/`。柜体有 2 个抽屉、4 扇门；“左侧门”控制左侧两扇门。关节体结果可交互切换四视角，导出每秒 30 帧的关节曲线 JSON，并使用浏览器录制当前视角的 WebM 视频；当前并不生成 FBX 或预渲染 MP4。G1/B1 动作是遵循 URDF 关节限位的网页运动演示，没有经过动力学、平衡和真实机器人安全验证，不能直接下发到硬件。
 
 可输入的简短中文示例：
 

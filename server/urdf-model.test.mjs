@@ -5,8 +5,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 test('GLTFLoader preserves original URDF joint names in userData after cloning', async () => {
-  for (const kind of ['g1', 'b1']) {
-    const bytes = fs.readFileSync(new URL(`../public/unitree/${kind}/model.glb`, import.meta.url));
+  for (const [kind, filename] of [['g1', 'AETHR-G1.glb'], ['b1', 'AETHR-B1.glb']]) {
+    const bytes = fs.readFileSync(new URL(`../public/input-models/${filename}`, import.meta.url));
     const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
     const gltf = await new Promise((resolve, reject) => new GLTFLoader().parse(data, '', resolve, reject));
     const originalNames = new Set();

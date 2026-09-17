@@ -9,6 +9,7 @@ import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.j
 import * as THREE from 'three';
 import UrdfModel from './UrdfModel.jsx';
 import { sampleUrdfFrames } from './urdf-motion.js';
+import { inputModels, recognizeInputModel } from './input-models.js';
 import {
   ArrowRight, Box, ChevronDown, CircleHelp, Clock3, Download, Expand,
   Film, FolderOpen, Gauge, Grid3X3, Layers3, Menu, MousePointer2,
@@ -91,9 +92,9 @@ function Landing({ enter }) {
       <h2>Beyond characters. <em>Every joint moves.</em></h2>
       <p>基于真实 URDF 关节结构：人形机器人、四足机器人与组合柜，都可在工作台拖拽查看。</p>
       <div className="case-grid">
-        <button className="case-card" onClick={() => enter('g1')}><img src="/unitree/g1/poster.png" alt="宇树 G1 人形机器人"/><span><small>29 DOF · OFFICIAL URDF</small><b>宇树 G1</b><em>打太极 · 跑步 · 波比跳</em></span><ArrowRight/></button>
-        <button className="case-card" onClick={() => enter('b1')}><img src="/unitree/b1/poster.png" alt="宇树 B1 四足机器人"/><span><small>12 DOF · OFFICIAL URDF</small><b>宇树 B1</b><em>慢走 · 小跑 · 坐下</em></span><ArrowRight/></button>
-        <button className="case-card" onClick={() => enter('cabinet')}><img src="/unitree/cabinet/poster.png" alt="PartNet 多关节组合柜"/><span><small>6 JOINTS · PARTNET URDF</small><b>组合柜</b><em>左右抽屉与四扇柜门自由组合</em></span><ArrowRight/></button>
+        <button className="case-card" onClick={enter}><img src="/unitree/g1/poster.png" alt="宇树 G1 人形机器人"/><span><small>29 DOF · OFFICIAL URDF</small><b>宇树 G1</b><em>下载 Mesh 后输入 Prompt</em></span><ArrowRight/></button>
+        <button className="case-card" onClick={enter}><img src="/unitree/b1/poster.png" alt="宇树 B1 四足机器人"/><span><small>12 DOF · OFFICIAL URDF</small><b>宇树 B1</b><em>下载 Mesh 后输入 Prompt</em></span><ArrowRight/></button>
+        <button className="case-card" onClick={enter}><img src="/unitree/cabinet/poster.png" alt="PartNet 多关节组合柜"/><span><small>6 JOINTS · PARTNET URDF</small><b>组合柜</b><em>下载 Mesh 后输入 Prompt</em></span><ArrowRight/></button>
       </div>
     </section>
 
@@ -220,7 +221,7 @@ function CameraPreset({ view }) {
   return null;
 }
 
-function Viewer({ url, format, onDrop, animate = false, playing = true, kind, motion, view, onCanvasReady, resetToken }) {
+function Viewer({ url, format, onDrop, animate = false, playing = true, kind, motion, view, onCanvasReady, resetToken, includeScene = true }) {
   const [loaded, setLoaded] = useState(false);
   useEffect(() => setLoaded(false), [url]);
   const ready = React.useCallback(() => setLoaded(true), []);
@@ -229,9 +230,8 @@ function Viewer({ url, format, onDrop, animate = false, playing = true, kind, mo
       <Suspense fallback={null}>
         <color attach="background" args={['#101216']}/>
         <ambientLight intensity={1.2}/><hemisphereLight args={['#e7eeff', '#29251f', 1.4]}/><directionalLight castShadow position={[4,7,5]} intensity={3}/><pointLight position={[-4,2,-3]} intensity={4} color="#7058ff"/>
-        {format === 'urdf' ? <UrdfModel kind={kind} motion={motion} playing={playing} onReady={ready} resetToken={resetToken}/> : format === 'glb' ? <GltfModel url={url} onReady={ready} animate={animate} playing={playing}/> : format === 'obj' ? <ObjModel url={url} onReady={ready}/> : <FbxModel url={url} onReady={ready} animate={animate} playing={playing}/>}
-        <Grid args={[20,20]} cellColor="#30343d" sectionColor="#515866" fadeDistance={18} fadeStrength={1.5} position={[0,-1.2,0]}/>
-        <ContactShadows position={[0,-1.18,0]} opacity={0.5} scale={8} blur={2}/>
+        {format === 'urdf' ? <UrdfModel url={url} kind={kind} motion={motion} playing={playing} onReady={ready} resetToken={resetToken}/> : format === 'glb' ? <GltfModel url={url} onReady={ready} animate={animate} playing={playing}/> : format === 'obj' ? <ObjModel url={url} onReady={ready}/> : <FbxModel url={url} onReady={ready} animate={animate} playing={playing}/>}
+        {includeScene && <><Grid args={[20,20]} cellColor="#30343d" sectionColor="#515866" fadeDistance={18} fadeStrength={1.5} position={[0,-1.2,0]}/><ContactShadows position={[0,-1.18,0]} opacity={0.5} scale={8} blur={2}/></>}
         <OrbitControls makeDefault enableDamping target={[0,.2,0]} minDistance={2.2} maxDistance={10}/>
         <CameraPreset view={view}/>
       </Suspense>
@@ -242,13 +242,15 @@ function Viewer({ url, format, onDrop, animate = false, playing = true, kind, mo
   </div>;
 }
 
-function Workspace({ home, exampleKind }) {
+function Workspace({ home }) {
   const [sample, setSample] = useState(null);
   const [articulatedResult, setArticulatedResult] = useState(null);
   const [modelUrl, setModelUrl] = useState(null);
   const [modelName, setModelName] = useState('');
   const [character, setCharacter] = useState('');
   const [modelFormat, setModelFormat] = useState('fbx');
+  const [modelKind, setModelKind] = useState(null);
+  const [checkingInput, setCheckingInput] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [playing, setPlaying] = useState(false);
   const [generated, setGenerated] = useState(false);
@@ -260,30 +262,38 @@ function Workspace({ home, exampleKind }) {
   const inputRef = useRef();
   const videoRef = useRef();
   const outputCanvasRef = useRef();
+  useEffect(() => () => { if (modelUrl?.startsWith('blob:')) URL.revokeObjectURL(modelUrl); }, [modelUrl]);
 
-  const loadExample = kind => {
-    const labels = { g1:'宇树 G1', b1:'宇树 B1', cabinet:'组合柜' };
-    setSample(null); setArticulatedResult(null); setCharacter(labels[kind]);
-    setModelUrl(`urdf:${kind}`); setModelName(`${labels[kind]} · URDF Mesh`);
-    setModelFormat('urdf'); setPrompt(''); setGenerated(false); setProgress(0); setPlaying(false);
-  };
-  useEffect(() => { if (exampleKind) loadExample(exampleKind); }, [exampleKind]);
-
-  const acceptFile = file => {
+  const acceptFile = async file => {
     if (!file) return;
     if (!/\.(fbx|obj|glb)$/i.test(file.name)) return alert('当前可预览 FBX、OBJ 或 GLB 格式');
-    // This exact GLB belongs to the PartNet cabinet already paired with its URDF.
-    if (file.name === 'c000_t000.glb' && file.size === 2241924) {
-      loadExample('cabinet'); setModelName(`${file.name} · PartNet 组合柜`); return;
-    }
+    if (file.size > 100_000_000) return alert('请上传不超过 100MB 的 Mesh');
+    setCheckingInput(true);
+    try {
+      const kind = await recognizeInputModel(file);
+      // Preserve support for the original PartNet export, which has no URDF joint nodes.
+      if (kind || (file.name === 'c000_t000.glb' && file.size === 2241924)) {
+        const selectedKind = kind || 'cabinet';
+        setSample(null); setArticulatedResult(null); setCharacter(inputModels[selectedKind].label);
+        setModelKind(selectedKind); setModelUrl(kind ? URL.createObjectURL(file) : inputModels.cabinet.url);
+        setModelName(file.name); setModelFormat('urdf'); setPrompt(''); setGenerated(false);
+        setProgress(0); setPlaying(false); setIncludeScene(false);
+        return;
+      }
     const key = file.name.replace(/\.(fbx|obj|glb)$/i, '');
     const matched = samples.find(item => item.key === key) || null;
     const detectedCharacter = ['武僧','叶问','虎头少女'].find(name => key.includes(name)) || '';
     setSample(null); setArticulatedResult(null); setCharacter(detectedCharacter);
+    setModelKind(null);
     // Known assets use the Blender-exported GLB so all material slots are preserved.
     setModelUrl(matched ? matched.file : URL.createObjectURL(file)); setModelName(file.name);
     setModelFormat(matched ? 'glb' : file.name.toLowerCase().split('.').pop());
-    setGenerated(false); setProgress(0); setPlaying(false);
+    setGenerated(false); setProgress(0); setPlaying(false); setIncludeScene(false);
+    } catch (error) {
+      alert(`读取 Mesh 失败：${error.message}`);
+    } finally {
+      setCheckingInput(false);
+    }
   };
   const generate = async () => {
     if (!modelUrl) return alert('请先上传 Mesh');
@@ -307,7 +317,7 @@ function Workspace({ home, exampleKind }) {
   const animatedFbxUrl = sample ? `/fbx/${sample.key}.fbx` : '';
   const animatedWebUrl = sample ? `/models/${sample.key}.glb` : '';
   const articulated = Boolean(articulatedResult);
-  const exampleTags = character === '宇树 G1' ? ['打太极','跑步','波比跳','挥手','深蹲'] : character === '宇树 B1' ? ['慢走','小跑','坐下','俯身','抬右前爪'] : character === '组合柜' ? ['上方左边的抽屉打开，左侧门打开','抽屉全部打开，门全部打开','抽屉全部闭合，门全部打开'] : character === '叶问' ? ['摊手','连环拳','肘击'] : character === '虎头少女' ? ['跳舞','格挡出拳','旋转踢'] : ['合掌','扫腿','直拳'];
+  const exampleTags = character === '宇树 G1' ? ['打太极','跑步','波比跳','挥手','深蹲'] : character === '宇树 B1' ? ['慢走','小跑','坐下','俯身','抬右前爪'] : character === '组合柜' ? ['上方左边的抽屉打开，左侧门打开','抽屉全部打开，门全部打开','抽屉全部闭合，门全部打开'] : character === '叶问' ? ['摊手','连环拳','肘击'] : character === '虎头少女' ? ['跳舞','格挡出拳','旋转踢'] : character === '武僧' ? ['合掌','扫腿','直拳'] : [];
   const exportArticulated = () => {
     if (!articulatedResult) return;
     const data = { format:'AETHR URDF joint-motion v1', source:character, jointDefinition:`/unitree/${articulatedResult.key}/joints.json`, prompt, fps:30, duration:articulatedResult.duration, frames:sampleUrdfFrames(articulatedResult) };
@@ -340,9 +350,9 @@ function Workspace({ home, exampleKind }) {
     <section className="controls-panel">
       <div className="panel-head"><div><span className="step-pill">01</span><h2>Source mesh</h2></div><button><X size={17}/></button></div>
       <div className={`upload-zone ${modelUrl?'has-model':''}`} onClick={()=>!modelUrl&&inputRef.current.click()} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();e.stopPropagation();acceptFile(e.dataTransfer.files[0])}}>
-        <input ref={inputRef} type="file" accept=".fbx,.obj,.glb" onChange={e=>acceptFile(e.target.files[0])}/>{modelUrl ? <div className="source-preview"><Viewer url={modelUrl} format={modelFormat} kind={modelFormat==='urdf' ? modelUrl.split(':')[1] : undefined} onDrop={e=>{e.preventDefault();acceptFile(e.dataTransfer.files[0])}}/><span><Rotate3d size={12}/> Drag to inspect mesh</span></div> : <><Upload/><b>Drop a 3D model</b><span>or click to browse</span><small>FBX · OBJ · GLB &nbsp; up to 100MB</small></>}
+        <input ref={inputRef} type="file" accept=".fbx,.obj,.glb" onChange={e=>{acceptFile(e.target.files[0]);e.target.value=''}}/>{modelUrl ? <div className="source-preview"><Viewer url={modelUrl} format={modelFormat} kind={modelKind} onDrop={e=>{e.preventDefault();acceptFile(e.dataTransfer.files[0])}}/><span><Rotate3d size={12}/> Drag to inspect mesh</span></div> : <><Upload/><b>{checkingInput?'Reading model…':'Drop a 3D model'}</b><span>or click to browse</span><small>FBX · OBJ · GLB &nbsp; up to 100MB</small></>}
       </div>
-      {!modelUrl && <div className="example-loader"><span>或试用 URDF 示例</span><button onClick={()=>loadExample('g1')}>宇树 G1</button><button onClick={()=>loadExample('b1')}>宇树 B1</button><button onClick={()=>loadExample('cabinet')}>组合柜</button></div>}
+      {!modelUrl && <div className="input-downloads"><span>下载示例 Mesh，再拖入上方</span><div>{Object.entries(inputModels).map(([kind, model])=><a key={kind} href={model.url} download={model.filename}><Download size={12}/>{model.label} GLB</a>)}</div></div>}
       {modelUrl && <div className="file-chip"><Box size={18}/><div><b>{modelName}</b><span>Static mesh · Ready to animate</span></div><button onClick={()=>inputRef.current.click()}>Replace</button></div>}
       <div className="divider"/>
       <div className="section-title"><span className="step-pill">02</span><h2>Describe motion</h2></div>
@@ -351,20 +361,20 @@ function Workspace({ home, exampleKind }) {
       <label className="setting-label">Motion settings <span>Advanced</span></label>
       <div className="setting-row"><span><Gauge size={16}/> Intensity</span><div className="segmented"><button>Low</button><button className="active">Medium</button><button>High</button></div></div>
       <div className="setting-row"><span><Clock3 size={16}/> Duration</span><button className="select">2 sec <ChevronDown size={13}/></button></div>
-      {modelFormat === 'urdf' ? <div className="scene-option"><div><span><Layers3 size={16}/> URDF 关节预览</span><small>可切换四视角、导出关节曲线或录制 WebM；暂无预渲染场景视频</small></div></div> : <div className="scene-option"><div><span><Layers3 size={16}/> Include scene</span><small>Add the rendered environment and multi-view video</small></div><button className={includeScene?'on':''} onClick={()=>{setIncludeScene(value=>!value);setGenerated(false);setProgress(0)}} aria-label="Toggle scene"><i/></button></div>}
+      <div className="scene-option"><div><span><Layers3 size={16}/> Include scene</span><small>{modelFormat==='urdf'?'为关节动画添加预览环境；可录制 WebM，不生成 MP4':'Add the rendered environment and multi-view video'}</small></div><button className={includeScene?'on':''} onClick={()=>{setIncludeScene(value=>!value);setGenerated(false);setProgress(0)}} aria-label="Toggle scene"><i/></button></div>
       <button className="generate" onClick={generate} disabled={progress > 0 && progress < 100}>{progress > 0 && progress < 100 ? <><span className="spinner"/>Generating · {progress}%</> : <><Zap size={17} fill="currentColor"/>Generate motion<span>⌘ ↵</span></>}</button>
       <p className="generate-note"><Sparkles size={12}/> Each generation creates one animation</p>
     </section>
     <section className="canvas-area">
-      {!generated && !(progress > 0 && progress < 100) ? <div className="motion-stage-empty"><div>{includeScene?<Layers3/>:<Box/>}</div><b>Your motion will appear here</b><span>{modelFormat === 'urdf' ? 'URDF joint animation · Four camera views' : includeScene ? 'Scene render · Four camera views' : 'Transparent stage · Animated FBX output'}</span></div> : !generated ? <div className="center-generating"><div className="gen-orb"><span/></div><b>Generating motion</b><span>Matching character and movement · {progress}%</span><div><i style={{width:`${progress}%`}}/></div></div> : <>
-        {articulated ? <><div className="fbx-motion-preview"><Viewer url={`urdf:${articulatedResult.key}`} format="urdf" kind={articulatedResult.key} motion={articulatedResult} playing={playing} view={view} onCanvasReady={canvas=>outputCanvasRef.current=canvas} resetToken={resetToken}/><span className="result-badge"><i/> {character} · {articulatedResult.label} · URDF 关节动画</span><small><Rotate3d size={12}/> 可拖拽查看 · 关节运动遵循 URDF 限位</small></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : includeScene ? <><div className="motion-preview"><video key={videoUrl} ref={videoRef} src={videoUrl} poster={posterUrl} preload="auto" autoPlay muted loop playsInline/><span className="result-badge"><i/> {sample.key} · SCENE · 1080P</span></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : <div className="fbx-motion-preview"><Viewer url={animatedWebUrl} format="glb" animate playing={playing}/><span className="result-badge"><i/> {sample.key} · FBX / NO SCENE</span><small><Rotate3d size={12}/> Drag to inspect animated mesh</small></div>}
+      {!generated && !(progress > 0 && progress < 100) ? <div className="motion-stage-empty"><div>{includeScene?<Layers3/>:<Box/>}</div><b>Your motion will appear here</b><span>{modelFormat === 'urdf' ? `URDF joint animation · ${includeScene?'With':'No'} scene` : includeScene ? 'Scene render · Four camera views' : 'Transparent stage · Animated FBX output'}</span></div> : !generated ? <div className="center-generating"><div className="gen-orb"><span/></div><b>Generating motion</b><span>Matching character and movement · {progress}%</span><div><i style={{width:`${progress}%`}}/></div></div> : <>
+        {articulated ? <><div className="fbx-motion-preview"><Viewer url={modelUrl} format="urdf" kind={articulatedResult.key} motion={articulatedResult} playing={playing} view={view} includeScene={includeScene} onCanvasReady={canvas=>outputCanvasRef.current=canvas} resetToken={resetToken}/><span className="result-badge"><i/> {character} · {articulatedResult.label} · URDF 关节动画</span><small><Rotate3d size={12}/> 可拖拽查看 · 关节运动遵循 URDF 限位</small></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : includeScene ? <><div className="motion-preview"><video key={videoUrl} ref={videoRef} src={videoUrl} poster={posterUrl} preload="auto" autoPlay muted loop playsInline/><span className="result-badge"><i/> {sample.key} · SCENE · 1080P</span></div><div className="center-view-switch">{['front','right','back','left'].map(v=><button key={v} className={view===v?'active':''} onClick={()=>setView(v)}>{v}<small>{v==='front'?'0°':v==='right'?'90°':v==='back'?'180°':'−90°'}</small></button>)}</div></> : <div className="fbx-motion-preview"><Viewer url={animatedWebUrl} format="glb" animate playing={playing}/><span className="result-badge"><i/> {sample.key} · FBX / NO SCENE</span><small><Rotate3d size={12}/> Drag to inspect animated mesh</small></div>}
         <div className="playbar"><button className="play" onClick={toggle}>{playing?<Pause fill="currentColor"/>:<Play fill="currentColor"/>}</button><span>00:00</span><div className="timeline"><i style={{width: playing?'58%':'34%'}}/><b style={{left: playing?'58%':'34%'}}/></div><span>00:02</span><button>1×</button><button><Expand size={15}/></button></div>
       </>}
     </section>
     <aside className="output-panel">
       <div className="output-head"><div><span className="step-pill">03</span><h2>Motion result</h2></div><button><Download size={17}/></button></div>
       {!generated ? <div className="result-empty"><Film/><b>{progress>0?'Generating…':'No motion yet'}</b><span>{progress>0?'The matched animation will appear in the center.':'Upload a mesh and describe the movement to generate your first animation.'}</span></div> : <>
-        <div className="output-mode"><Layers3/><div><span>Output mode</span><b>{articulated?'Interactive 3D animation':includeScene?'Scene render':'Animation only'}</b></div><em>{articulated?'4 views':includeScene?'4-view · 1080p':'No scene'}</em></div>
+        <div className="output-mode"><Layers3/><div><span>Output mode</span><b>{articulated?'Interactive 3D animation':includeScene?'Scene render':'Animation only'}</b></div><em>{articulated?(includeScene?'Preview scene':'No scene'):includeScene?'4-view · 1080p':'No scene'}</em></div>
         <div className="result-info"><div><span>Animation</span><b>{articulated?`${character} · ${articulatedResult.label}`:`${sample.name} · ${sample.level}`}</b></div><div><span>Duration</span><b>{articulated?articulatedResult.duration.toFixed(1):'2.0'} sec</b></div><div><span>Frames</span><b>{articulated?Math.ceil(articulatedResult.duration*30)+1:33}</b></div><div><span>Format</span><b>{articulated?'JSON / WebM':includeScene?'MP4':'FBX'}</b></div></div>
         {articulated ? <button className="export" onClick={exportArticulated}><Download size={16}/> Export joint motion JSON <ChevronDown size={15}/></button> : <a className="export" href={includeScene?videoUrl:animatedFbxUrl} download><Download size={16}/> Export {includeScene?'scene video':'animation FBX'} <ChevronDown size={15}/></a>}
         {articulated && <><button className="export export-secondary" onClick={recordArticulated} disabled={recording}><Film size={16}/>{recording?'正在录制…':'录制当前视角 WebM 视频'} <ChevronDown size={15}/></button><p className="output-disclaimer">此案例为基于关节数据的程序化演示；可录制当前视角，尚未生成 FBX 或预渲染 MP4。</p></>}
@@ -375,10 +385,9 @@ function Workspace({ home, exampleKind }) {
 
 function App(){
   const [page,setPage]=useState(location.hash==='#studio'?'studio':'home');
-  const [exampleKind,setExampleKind]=useState(null);
   useEffect(()=>{const sync=()=>setPage(location.hash==='#studio'?'studio':'home');addEventListener('hashchange',sync);return()=>removeEventListener('hashchange',sync)},[]);
   const go=p=>{const hash=p==='studio'?'#studio':'#home';if(location.hash!==hash) location.hash=hash;setPage(p);window.scrollTo(0,0)};
-  return page==='home'?<Landing enter={kind=>{setExampleKind(kind||null);go('studio')}}/>:<Workspace home={()=>go('home')} exampleKind={exampleKind}/>
+  return page==='home'?<Landing enter={()=>go('studio')}/>:<Workspace home={()=>go('home')}/>;
 }
 
 createRoot(document.getElementById('root')).render(<App/>);

@@ -5,8 +5,8 @@ import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.j
 import * as THREE from 'three';
 import { urdfDefinitions, urdfPose } from './urdf-motion.js';
 
-export default function UrdfModel({ kind, motion, playing = true, onReady, resetToken }) {
-  const gltf = useLoader(GLTFLoader, `/unitree/${kind}/model.glb`);
+export default function UrdfModel({ url, kind, motion, playing = true, onReady, resetToken }) {
+  const gltf = useLoader(GLTFLoader, url);
   const clock = useRef(0);
   const setup = useMemo(() => {
     const object = cloneSkeleton(gltf.scene);

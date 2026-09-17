@@ -92,7 +92,7 @@ def mesh_from_visual(visual, urdf_dir, package_dir, cache, colors):
     return shapes, visual_matrix, color_key
 
 
-def convert(kind, urdf_path, output_dir):
+def convert(kind, urdf_path, output_dir, input_dir):
     root = ET.parse(urdf_path).getroot()
     links = {link.get("name"): link for link in root.findall("link")}
     joints = root.findall("joint")
@@ -151,7 +151,9 @@ def convert(kind, urdf_path, output_dir):
                 scene.graph.update(frame_to=geom_name, frame_from=f"link:{link_name}", matrix=matrix, geometry=geom_name)
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    model_path = output_dir / "model.glb"
+    input_dir.mkdir(parents=True, exist_ok=True)
+    display_names = {"g1": "G1", "b1": "B1", "cabinet": "Cabinet"}
+    model_path = input_dir / f"AETHR-{display_names[kind]}.glb"
     model_path.write_bytes(scene.export(file_type="glb"))
     (output_dir / "joints.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"{kind}: {len(metadata['joints'])} joints, {len(scene.geometry)} visuals, {len(model_path.read_bytes()) / 1e6:.1f} MB -> {model_path}")
@@ -163,10 +165,11 @@ def main():
     parser.add_argument("--output", type=Path, required=True, help="output directory")
     parser.add_argument("--cabinet-urdf", type=Path, help="PartNet-Mobility 40417 mobility.urdf")
     args = parser.parse_args()
+    input_dir = args.output.parent / "input-models"
     for kind, rel in MODELS.items():
-        convert(kind, args.source / rel, args.output / kind)
+        convert(kind, args.source / rel, args.output / kind, input_dir)
     if args.cabinet_urdf:
-        convert("cabinet", args.cabinet_urdf, args.output / "cabinet")
+        convert("cabinet", args.cabinet_urdf, args.output / "cabinet", input_dir)
 
 
 if __name__ == "__main__":
