@@ -298,7 +298,7 @@ function Workspace({ home }) {
   const generate = async () => {
     if (!modelUrl) return alert('请先上传 Mesh');
     if (!prompt.trim()) return alert('请输入动作描述');
-    if (!character) return alert('当前演示支持武僧、叶问、虎头少女、宇树 G1、宇树 B1 和组合柜的示例 Mesh。');
+    if (!character) return alert('这个 GLB 可以预览，但没有识别到受支持的关节结构。请上传 G1、B1 或组合柜的 URDF GLB 输入文件。');
     setGenerated(false); setProgress(0);
     let p = 0; const timer = setInterval(() => { p = Math.min(p + 3, 88); setProgress(p); }, 55);
     try {
@@ -317,7 +317,7 @@ function Workspace({ home }) {
   const animatedFbxUrl = sample ? `/fbx/${sample.key}.fbx` : '';
   const animatedWebUrl = sample ? `/models/${sample.key}.glb` : '';
   const articulated = Boolean(articulatedResult);
-  const exampleTags = character === '宇树 G1' ? ['打太极','跑步','波比跳','挥手','深蹲'] : character === '宇树 B1' ? ['慢走','小跑','坐下','俯身','抬右前爪'] : character === '组合柜' ? ['上方左边的抽屉打开，左侧门打开','抽屉全部打开，门全部打开','抽屉全部闭合，门全部打开'] : character === '叶问' ? ['摊手','连环拳','肘击'] : character === '虎头少女' ? ['跳舞','格挡出拳','旋转踢'] : character === '武僧' ? ['合掌','扫腿','直拳'] : [];
+  const exampleTags = character === '宇树 G1' ? ['打太极','跑步','波比跳','挥手','下蹲'] : character === '宇树 B1' ? ['慢走','小跑','坐下','俯身','抬右前爪'] : character === '组合柜' ? ['上方左边的抽屉打开，左侧门打开','抽屉全部打开，门全部打开','抽屉全部闭合，门全部打开'] : character === '叶问' ? ['摊手','连环拳','肘击'] : character === '虎头少女' ? ['跳舞','格挡出拳','旋转踢'] : character === '武僧' ? ['合掌','扫腿','直拳'] : [];
   const exportArticulated = () => {
     if (!articulatedResult) return;
     const data = { format:'AETHR URDF joint-motion v1', source:character, jointDefinition:`/unitree/${articulatedResult.key}/joints.json`, prompt, fps:30, duration:articulatedResult.duration, frames:sampleUrdfFrames(articulatedResult) };
@@ -353,7 +353,7 @@ function Workspace({ home }) {
         <input ref={inputRef} type="file" accept=".fbx,.obj,.glb" onChange={e=>{acceptFile(e.target.files[0]);e.target.value=''}}/>{modelUrl ? <div className="source-preview"><Viewer url={modelUrl} format={modelFormat} kind={modelKind} onDrop={e=>{e.preventDefault();acceptFile(e.dataTransfer.files[0])}}/><span><Rotate3d size={12}/> Drag to inspect mesh</span></div> : <><Upload/><b>{checkingInput?'Reading model…':'Drop a 3D model'}</b><span>or click to browse</span><small>FBX · OBJ · GLB &nbsp; up to 100MB</small></>}
       </div>
       {!modelUrl && <div className="input-downloads"><span>下载示例 Mesh，再拖入上方</span><div>{Object.entries(inputModels).map(([kind, model])=><a key={kind} href={model.url} download={model.filename}><Download size={12}/>{model.label} GLB</a>)}</div></div>}
-      {modelUrl && <div className="file-chip"><Box size={18}/><div><b>{modelName}</b><span>Static mesh · Ready to animate</span></div><button onClick={()=>inputRef.current.click()}>Replace</button></div>}
+      {modelUrl && <div className="file-chip"><Box size={18}/><div><b>{modelName}</b><span>{character ? `${character} · Ready to animate` : 'Preview only · URDF joints not recognized'}</span></div><button onClick={()=>inputRef.current.click()}>Replace</button></div>}
       <div className="divider"/>
       <div className="section-title"><span className="step-pill">02</span><h2>Describe motion</h2></div>
       <div className="prompt-box"><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="用简单中文描述动作，例如：打太极、跑步、打开左侧门…"/><div><span>{prompt.length} / 500</span><button><Sparkles size={14}/> Enhance</button></div></div>

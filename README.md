@@ -27,7 +27,7 @@ npm run dev
 
 工作台初始为空。点击首页案例只会打开空白工作台，不会预加载 Mesh。在工作台下载下列输入 GLB，拖入 **Source mesh**，输入对应的中文 Prompt，再点击 **Generate motion**：
 
-- [`AETHR-G1.glb`](public/input-models/AETHR-G1.glb)：打太极、跑步、波比跳、挥手、深蹲
+- [`AETHR-G1.glb`](public/input-models/AETHR-G1.glb)：打太极、跑步、波比跳、挥手、深蹲（也可输入“下蹲”）
 - [`AETHR-B1.glb`](public/input-models/AETHR-B1.glb)：慢走、小跑、坐下、俯身、抬右前爪
 - [`AETHR-Cabinet.glb`](public/input-models/AETHR-Cabinet.glb)：抽屉与柜门的组合开合
 

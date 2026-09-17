@@ -6,6 +6,8 @@ test('G1 and B1 Chinese prompts select distinct URDF motions', () => {
   assert.equal(matchMotion('宇树 G1', '打太极').action, 'taichi');
   assert.equal(matchMotion('宇树 G1', '跑步').action, 'run');
   assert.equal(matchMotion('宇树 G1', '波比跳').action, 'burpee');
+  assert.equal(matchMotion('宇树 G1', '下蹲').action, 'squat');
+  assert.equal(matchMotion('宇树 G1', '下蹲起跳').action, 'burpee');
   assert.equal(matchMotion('宇树 B1', '慢走').action, 'walk');
   assert.equal(matchMotion('宇树 B1', '小跑').action, 'trot');
   assert.equal(matchMotion('宇树 B1', '坐下').action, 'sit');

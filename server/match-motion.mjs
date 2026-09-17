@@ -9,7 +9,7 @@ const g1Actions = [
   { key: 'run', label: '跑步', words: ['跑步', '慢跑', '原地跑'] },
   { key: 'burpee', label: '波比跳', words: ['波比跳', '下蹲起跳', '蹲跳'] },
   { key: 'wave', label: '挥手', words: ['挥手', '招手'] },
-  { key: 'squat', label: '深蹲', words: ['深蹲', '蹲下再站起'] }
+  { key: 'squat', label: '深蹲', words: ['深蹲', '下蹲', '蹲下', '蹲下再站起'] }
 ];
 const b1Actions = [
   { key:'walk', label:'慢走', words:['慢走','行走','走路'] },
