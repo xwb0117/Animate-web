@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { matchMotion } from './match-motion.mjs';
 
 test('G1 and B1 Chinese prompts select distinct URDF motions', () => {
@@ -26,6 +27,16 @@ test('all nine character clips map to distinct short Chinese prompts', () => {
     });
   }
   assert.throws(() => matchMotion('武僧', '跳舞'));
+});
+
+test('all nine detailed canonical prompts map to their own clips', () => {
+  const catalog = JSON.parse(fs.readFileSync(new URL('./motion-catalog.json', import.meta.url), 'utf8'));
+  assert.equal(catalog.length, 9);
+  assert.equal(new Set(catalog.map(item => item.prompt)).size, 9);
+  for (const item of catalog) {
+    assert.ok(item.prompt.length >= 60, `${item.key} prompt should describe the motion in detail`);
+    assert.equal(matchMotion(item.character, item.prompt).key, item.key);
+  }
 });
 
 test('cabinet parses left drawer and left doors independently', () => {
