@@ -1,10 +1,9 @@
 import express from 'express';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { matchMotion } from './match-motion.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const catalog = JSON.parse(fs.readFileSync(path.join(root, 'server/motion-catalog.json'), 'utf8'));
 const app = express();
 const port = Number(process.env.PORT || 3000);
 
@@ -13,15 +12,8 @@ app.use(express.json({ limit: '32kb' }));
 
 app.post('/api/generate', (req, res) => {
   const { character, prompt } = req.body || {};
-  const candidates = catalog.filter(item => item.character === character);
-  const normalized = String(prompt || '').toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, ' ').trim();
-  let match = candidates.find(item => item.prompt.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, ' ').trim() === normalized);
-  if (!match) {
-    const ranked = candidates.map(item => ({ item, score: item.keywords.reduce((sum, word) => sum + (normalized.includes(word.toLowerCase()) ? 1 : 0), 0) })).sort((a, b) => b.score - a.score);
-    match = ranked[0]?.score > 0 ? ranked[0].item : null;
-  }
-  if (!match) return res.status(422).json({ error: 'No matching motion found for this character and prompt.' });
-  res.json({ key: match.key, character: match.character, level: match.level });
+  try { res.json(matchMotion(character, prompt)); }
+  catch (error) { res.status(422).json({ error: error.message }); }
 });
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
